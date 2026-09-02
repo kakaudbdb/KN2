@@ -195,6 +195,71 @@ async def create_requisition(payload, created_by: str, created_by_id: str = "") 
     return safe_doc(doc)
 
 
+QTY_EDITABLE_STATUSES = ("draft", "pending_approval", "approved")
+
+
+async def update_line_qty(pr_id: str, line_no: int, quantity: float, reason: str,
+                          actor: Dict[str, Any]) -> Dict[str, Any]:
+    """AS-02 — ubah qty satu baris PR. Qty boleh NAIK di atas kebutuhan pesanan (SO),
+    tidak boleh turun di bawah kebutuhan pesanan (`order_qty`) atau yang sudah terealisasi."""
+    from services.pr_sourcing_service import ensure_line_shape, compute_realization
+    pr = await db.purchase_requisitions.find_one({"id": pr_id}, {"_id": 0})
+    if not pr:
+        raise ValueError("PR tidak ditemukan")
+    if pr.get("status") not in QTY_EDITABLE_STATUSES:
+        raise ValueError(f"PR berstatus '{pr.get('status')}' tidak bisa diubah qty-nya "
+                         "(hanya draf / menunggu ACC / disetujui sebelum realisasi penuh).")
+    if not (reason or "").strip():
+        raise ValueError("Alasan perubahan qty wajib diisi.")
+    ensure_line_shape(pr)
+    items = pr.get("items") or []
+    line = next((it for it in items if int(it.get("line_no") or 0) == int(line_no)), None)
+    if not line:
+        raise ValueError("Baris PR tidak ditemukan")
+    qty = round(float(quantity), 3)
+    old = round(float(line.get("quantity") or 0), 3)
+    if abs(qty - old) < 0.0005:
+        raise ValueError("Qty tidak berubah.")
+    realized = float(line.get("realized_qty") or 0)
+    if qty < realized - 0.0005:
+        raise ValueError(f"Qty baru {qty:g} di bawah yang sudah terealisasi ke PO/makloon ({realized:g}).")
+    from_so = pr.get("source") in ("so_repeat", "so") or bool(line.get("source_ref_id"))
+    order_qty = line.get("order_qty")
+    if order_qty is None and from_so:
+        order_qty = old
+        line["order_qty"] = old
+    if order_qty is not None and qty < float(order_qty) - 0.0005:
+        raise ValueError(f"Qty tidak boleh di bawah kebutuhan pesanan ({float(order_qty):g}) — "
+                         "kekurangan pesanan pelanggan akan tak terpenuhi.")
+    line["quantity"] = qty
+    line["subtotal"] = round(qty * float(line.get("est_price") or 0), 2)
+    if order_qty is not None:
+        line["extra_qty"] = round(qty - float(order_qty), 3)
+    if line.get("quantity_base") is not None and old > 0:
+        line["quantity_base"] = round(float(line["quantity_base"]) * qty / old, 3)
+    line.setdefault("qty_history", []).append({
+        "from": old, "to": qty, "by": actor.get("name", ""), "by_id": actor.get("id", ""),
+        "at": now_iso(), "reason": reason.strip()})
+    total = round(sum(float(i.get("subtotal") or 0) for i in items), 2)
+    upd: Dict[str, Any] = {"items": items, "total_est_amount": total, "updated_at": now_iso()}
+    real = compute_realization({**pr, "items": items})
+    upd["realization"] = real
+    upd["realization_status"] = real.get("realization_status", pr.get("realization_status"))
+    note = f"Qty baris {line_no} {old:g} → {qty:g} {line.get('unit') or ''}: {reason.strip()}"
+    # Kenaikan nilai pada PR yang sudah disetujui bisa menembus ambang persetujuan.
+    if pr.get("status") == "approved" and total > float(pr.get("total_est_amount") or 0):
+        appr = await evaluate_approval("purchase_requisition", total, pr.get("entity_id") or DEFAULT_ENTITY_ID)
+        if appr["requires_approval"]:
+            upd.update({"status": "pending_approval", "approval_status": "pending",
+                        "approval_required": True, "required_approval_role": appr["required_role"],
+                        "approved_by": None, "approved_at": None})
+            note += " — nilai naik, kembali menunggu persetujuan"
+    await db.purchase_requisitions.update_one(
+        {"id": pr_id}, {"$set": upd, "$push": {"timeline": timeline_entry(
+            "line_qty_changed", note, actor.get("name", ""), reason.strip())}})
+    return safe_doc(await db.purchase_requisitions.find_one({"id": pr_id}, {"_id": 0}))
+
+
 async def submit_requisition(pr_id: str) -> Dict[str, Any]:
     pr = await db.purchase_requisitions.find_one({"id": pr_id}, {"_id": 0})
     if not pr:

@@ -159,6 +159,12 @@ function GalleryCard({ g, canManage, onManage, onDelete }) {
       <div className="aspect-[4/3] bg-[#F2F3F5] relative">
         {cover ? <GalleryImage galleryId={g.id} fileId={cover.id} alt={g.title} />
           : <div className="h-full w-full flex flex-col items-center justify-center text-[#C7C9CF]"><ImageOff size={26} /><span className="text-[11px] mt-1">Tanpa gambar</span></div>}
+        {!cover && (
+          <span data-testid={`gallery-no-artwork-${g.code || g.id}`} title="Desain ini belum punya berkas artwork — unggah lewat Kelola"
+            className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-[#FFF3D6] border border-[#F5C26B] text-[#8C4A00] text-[10px] font-bold flex items-center gap-1">
+            <ImageOff size={10} /> Belum ada artwork
+          </span>
+        )}
         {aiOn && <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-[#0058CC] text-white text-[10px] font-semibold flex items-center gap-1"><Sparkles size={10} /> AI</span>}
       </div>
       <div className="p-3 flex flex-col gap-1.5 flex-1">

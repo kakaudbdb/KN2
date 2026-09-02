@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios, { API } from "../../services/apiClient";
 import {
-  ArrowLeft, CheckCircle2, XCircle, Send, ShoppingCart, AlertTriangle, Ban, Printer,
+  ArrowLeft, CheckCircle2, XCircle, Send, ShoppingCart, AlertTriangle, Ban, Printer, Pencil,
 } from "lucide-react";
 import { formatCurrency, formatQty } from "../../utils/formatters";
 import KNSelect from "../../components/KNSelect";
@@ -9,6 +9,7 @@ import { printPurchaseRequisition } from "../../utils/docPrint";
 import DocumentActionsBar from "../documents/DocumentActionsBar";
 import { SOURCE_LABEL, StatusPill, Field } from "./prConstants";
 import PrSourcingPanel from "./PrSourcingPanel";
+import PrLineQtyModal from "./PrLineQtyModal";   // AS-02 — ubah qty beli baris
 import { FULFILLMENT_META } from "./supplier-items/supplierItemsApi";
 import QtyDual from "../../components/QtyDual";      // FASE U — dua satuan
 
@@ -25,8 +26,10 @@ export default function DetailPanel({ pr, canApprove, suppliers, warehouses, onB
   const [convDate, setConvDate] = useState("");
   const [showReject, setShowReject] = useState(false);   // H3 — tangkap alasan tolak
   const [rejectReason, setRejectReason] = useState("");
+  const [qtyLine, setQtyLine] = useState(null);         // AS-02 — baris yang qty-nya diubah
 
   const nonCatalog = (pr.items || []).some((it) => !it.product_id);
+  const canEditQty = ["draft", "pending_approval", "approved"].includes(pr.status);
 
   async function act(path, body) {
     setBusy(true); setErr("");
@@ -117,7 +120,21 @@ export default function DetailPanel({ pr, canApprove, suppliers, warehouses, onB
                     {(FULFILLMENT_META[it.fulfillment_mode || "purchase"] || {}).label || "Beli"}
                   </span>
                 </span>
-                <span className="text-[12px] tabular-nums text-right"><QtyDual rolls={it.qty_rolls} measure={it.quantity} unit={it.unit} factor={it.unit_factor} factorTo={it.unit_factor_to} /></span>
+                <span className="text-[12px] tabular-nums text-right">
+                  <QtyDual rolls={it.qty_rolls} measure={it.quantity} unit={it.unit} factor={it.unit_factor} factorTo={it.unit_factor_to} />
+                  {it.order_qty != null && Number(it.extra_qty) > 0 && (
+                    <span className="block text-[9.5px] font-semibold text-[#126E2C]" data-testid={`pr-detail-extra-${i}`}
+                      title={`Kebutuhan pesanan ${formatQty(it.order_qty)} ${it.unit}; kelebihan untuk stok`}>
+                      pesanan {formatQty(it.order_qty)} · +{formatQty(it.extra_qty)} stok
+                    </span>
+                  )}
+                  {canEditQty && (
+                    <button data-testid={`pr-detail-qty-edit-${i}`} className="mt-0.5 inline-flex items-center gap-0.5 text-[9.5px] font-semibold text-[#0058CC] hover:underline"
+                      onClick={() => setQtyLine(it)} title="Ubah qty beli (boleh di atas kebutuhan pesanan)">
+                      <Pencil size={9} /> ubah qty
+                    </button>
+                  )}
+                </span>
                 <span className="text-[12px] tabular-nums text-right">{formatCurrency(it.est_price)}</span>
                 <span className="text-[12px] tabular-nums text-right font-semibold">{formatCurrency(it.subtotal)}</span>
               </div>
@@ -201,6 +218,12 @@ export default function DetailPanel({ pr, canApprove, suppliers, warehouses, onB
             </div>
           </div>
         </div>
+      )}
+
+      {/* AS-02 — ubah qty beli baris */}
+      {qtyLine && (
+        <PrLineQtyModal pr={pr} line={qtyLine} onClose={() => setQtyLine(null)}
+          onDone={() => { setQtyLine(null); onChanged("Qty beli diperbarui."); reload(pr.id); }} />
       )}
 
       {/* H3 — Reject modal (alasan wajib, bukan hardcode) */}

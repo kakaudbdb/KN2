@@ -271,6 +271,55 @@ async def _recalc(sample_id: str) -> Dict[str, Any]:
     return await _get(sample_id)
 
 
+# ─── MD-06 — riwayat labdip per warna / barang ────────────────────────
+async def labdip_history(scope: Dict[str, Any], *, color_id: str = "", product_id: str = "",
+                         type_code: str = "labdip", limit: int = 60) -> Dict[str, Any]:
+    """Semua round (bawaan: labdip) lintas permintaan untuk satu WARNA pustaka atau
+    satu BARANG — tanggal butuh (`due_date`) per putaran + tautan ke rinciannya."""
+    ors: List[Dict[str, Any]] = []
+    if color_id:
+        ors.append({"color_target.color_id": color_id})
+    if product_id:
+        ors.append({"product_id": product_id})
+    if not ors:
+        raise RndError("Sebutkan warna (color_id) atau barang (product_id).")
+    flt: Dict[str, Any] = {"$and": [dict(scope or {}), {"$or": ors}]} if scope else {"$or": ors}
+    docs = await db[COLL].find(flt, {"_id": 0}).sort("created_at", -1).to_list(limit)
+    tcode = str(type_code or "").strip().lower()
+    rows: List[Dict[str, Any]] = []
+    for s in docs:
+        for r in s.get("rounds") or []:
+            if tcode and _type_of_round(r, s) != tcode:
+                continue
+            rows.append({
+                "sample_id": s["id"], "sample_number": s.get("number", ""),
+                "sample_title": s.get("title", ""), "sample_status": s.get("status", ""),
+                "spec_number": s.get("spec_number", ""), "product_id": s.get("product_id", ""),
+                "color": s.get("color_target") or {},
+                "supplier_id": r.get("supplier_id", ""), "supplier_name": r.get("supplier_name", ""),
+                "round_id": r.get("id", ""), "round_no": r.get("round_no"),
+                "type_code": _type_of_round(r, s),
+                "due_date": r.get("due_date", ""), "sent_at": r.get("sent_at", ""),
+                "received_at": r.get("received_at", ""), "status": r.get("status", ""),
+                "result": r.get("result", ""), "score": r.get("score"),
+                "overdue": bool(r.get("overdue")), "note": r.get("note", ""),
+                "measurements": r.get("measurements") or {},
+                "performed_by": r.get("performed_by", ""),
+            })
+    rows.sort(key=lambda x: (x.get("due_date") or x.get("sent_at") or ""), reverse=True)
+    scores = [float(x["score"]) for x in rows if x.get("score") is not None]
+    summary = {
+        "samples": len(docs), "rounds": len(rows),
+        "acc": sum(1 for x in rows if x["result"] == "acc"),
+        "revisi": sum(1 for x in rows if x["result"] == "revisi"),
+        "tolak": sum(1 for x in rows if x["result"] == "tolak"),
+        "open": sum(1 for x in rows if not x["result"]),
+        "best_score": max(scores) if scores else None,
+        "suppliers": len({x["supplier_id"] for x in rows if x["supplier_id"]}),
+    }
+    return {"count": len(rows), "items": rows, "summary": summary, "type_code": tcode}
+
+
 # ─── CRUD ──────────────────────────────────────────────────────
 async def create_sample(payload: Dict[str, Any], *, entity_id: str,
                         actor: str = "") -> Dict[str, Any]:

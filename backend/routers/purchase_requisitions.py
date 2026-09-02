@@ -11,7 +11,7 @@ from core_utils import safe_doc
 from entity_scope import entity_ctx, resolve_list_scope, assert_entity_access
 from schemas import (
     PurchaseRequisitionCreate, PurchaseRequisitionDecision, PurchaseRequisitionConvert,
-    PRRealizePoIn, PRRealizeMakloonIn,
+    PRRealizePoIn, PRRealizeMakloonIn, PRLineQtyIn,
 )
 from services import purchase_requisition_service as svc
 from services import pr_sourcing_service as src
@@ -78,6 +78,25 @@ async def get_requisition(pr_id: str, request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail="PR tidak ditemukan")
     assert_entity_access(doc, "purchase_requisitions", ctx)
     return doc
+
+
+@router.patch("/purchase-requisitions/{pr_id}/lines/{line_no}")
+async def update_line_qty(pr_id: str, line_no: int, payload: PRLineQtyIn,
+                          request: Request) -> Dict[str, Any]:
+    """AS-02 — naikkan qty beli baris PR (termasuk PR yang lahir dari SO)."""
+    actor = await require_permission(request, "purchase_requisition", "create")
+    ctx = await entity_ctx(request)
+    doc = await db.purchase_requisitions.find_one({"id": pr_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="PR tidak ditemukan")
+    assert_entity_access(doc, "purchase_requisitions", ctx)
+    try:
+        updated = await svc.update_line_qty(pr_id, line_no, payload.quantity, payload.reason, actor)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await audit(actor.get("name", ""), "pr_line_qty_changed", "purchase_requisition", pr_id,
+                {"line_no": line_no, "quantity": payload.quantity}, reason=payload.reason)
+    return updated
 
 
 @router.post("/purchase-requisitions/{pr_id}/submit")

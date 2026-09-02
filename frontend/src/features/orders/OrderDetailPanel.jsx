@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { XCircle, Clock3, Truck, CreditCard, PackageX, ShieldAlert, Send, FileText, AlertTriangle, PackageCheck, ClipboardCheck, PackageSearch, Repeat } from "lucide-react";
+import { XCircle, Clock3, Truck, CreditCard, PackageX, ShieldAlert, Send, FileText, AlertTriangle, PackageCheck, ClipboardCheck, PackageSearch, Repeat, Unlock } from "lucide-react";
 import { can } from "../../config/roles";
 import { formatCurrency, formatQty } from "../../utils/formatters";
 import { StagePill, StageTimeline } from "../../components/SoStatusBadges";
@@ -20,6 +20,8 @@ import RestockPanel from "./RestockPanel";
 import AmendmentTrailPanel from "../finance/amendments/AmendmentTrailPanel";
 // Alokasi manual Admin Sales — Ganti Roll pilihan sistem (izin inventory.pegging).
 import ReallocateRollsModal from "./ReallocateRollsModal";
+// AS-03 — Lepas reservasi SEBAGIAN per baris (Admin Sales, alasan wajib, status SO tetap).
+import ReleaseRollsModal from "./ReleaseRollsModal";
 // F1b — arti `price_source` yang di-snapshot pada baris SO (dari resolver harga).
 const PRICE_SOURCE_BADGE = {
   special_approval: { label: "Harga khusus", fg: "#6B219A", bg: "#F3E9FA" },
@@ -48,6 +50,7 @@ export function OrderDetailPanel({
   const [taxInvoices, setTaxInvoices] = useState([]);
   const [issuingTax, setIssuingTax] = useState(false);
   const [reallocItem, setReallocItem] = useState(null);   // Ganti Roll (alokasi manual)
+  const [releaseItem, setReleaseItem] = useState(null);   // AS-03 — Lepas roll sebagian
   const FULFILL_STATUSES = ["partially_picked", "picked", "partially_shipped", "shipped", "done"];
   const TAX_ELIGIBLE = ["confirmed", "partially_picked", "picked", "partially_shipped", "shipped", "done"];
   const taxEligible = sel?.is_pkp !== false && Number(sel?.ppn_amount) > 0 && TAX_ELIGIBLE.includes(sel?.status);
@@ -292,15 +295,41 @@ export function OrderDetailPanel({
                 </span>
               </div>
               {canReallocate && (
-                <button data-testid={`order-item-realloc-${item.product_id}`}
-                  onClick={() => setReallocItem(item)}
-                  className="mt-1 flex items-center gap-1 rounded border border-[#CBDFFF] bg-[#F2F7FF] px-1.5 py-0.5 text-[10px] font-semibold text-[#0058CC] hover:bg-[#E3EEFF]">
-                  <Repeat size={10} /> Ganti Roll
-                </button>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <button data-testid={`order-item-realloc-${item.product_id}`}
+                    onClick={() => setReallocItem(item)}
+                    className="flex items-center gap-1 rounded border border-[#CBDFFF] bg-[#F2F7FF] px-1.5 py-0.5 text-[10px] font-semibold text-[#0058CC] hover:bg-[#E3EEFF]">
+                    <Repeat size={10} /> Ganti Roll
+                  </button>
+                  {(sel.allocations || []).some((a) => a.product_id === item.product_id && (a.rolls || []).length > 0) && (
+                    <button data-testid={`order-item-release-${item.product_id}`}
+                      onClick={() => setReleaseItem(item)}
+                      title="Lepas sebagian roll ter-reserve baris ini (status pesanan tetap)"
+                      className="flex items-center gap-1 rounded border border-[#FFE2B8] bg-[#FFF8EE] px-1.5 py-0.5 text-[10px] font-semibold text-[#8C4A00] hover:bg-[#FFEFD6]">
+                      <Unlock size={10} /> Lepas Roll
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           ))}
         </div>
+
+        {/* AS-03 — jejak pelepasan reservasi sebagian (siapa · kapan · alasan) */}
+        {(sel.reservation_releases || []).length > 0 && (
+          <div data-testid="order-release-log" className="rounded-md border border-[#FFE2B8] overflow-hidden">
+            <div className="px-2.5 py-1.5 bg-[#FFF8EE] text-[10px] font-bold uppercase text-[#8C4A00] border-b border-[#FFE2B8]">Reservasi dilepas sebagian</div>
+            {sel.reservation_releases.map((r) => (
+              <div key={r.id} data-testid={`order-release-${r.id}`} className="px-2.5 py-1.5 border-b border-[#F4F5F7] last:border-0 text-[10.5px]">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-[#1C1C1E] truncate">{r.product_name} · {formatQty(r.qty)} {r.unit} · {(r.roll_nos || []).filter(Boolean).join(", ") || `${(r.roll_ids || []).length} roll`}</span>
+                  <span className="shrink-0 text-[#6B6B73]">{r.by} · {String(r.at || "").slice(0, 16).replace("T", " ")}</span>
+                </div>
+                <p className="text-[#6B6B73]">Alasan: {r.reason}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Sub-fase 1.7 — Alokasi Stok (Lot & Gudang) + penjelasan (CLARITY) */}
         {(sel.allocations || []).length > 0 && (
@@ -551,6 +580,11 @@ export function OrderDetailPanel({
         <ReallocateRollsModal order={sel} item={reallocItem}
           onClose={() => setReallocItem(null)}
           onDone={() => { setReallocItem(null); onRefresh?.(); }} />
+      )}
+      {releaseItem && (
+        <ReleaseRollsModal order={sel} item={releaseItem}
+          onClose={() => setReleaseItem(null)}
+          onDone={() => { setReleaseItem(null); onRefresh?.(); }} />
       )}
     </aside>
   );

@@ -370,6 +370,20 @@ class SoReallocateIn(BaseModel):
     roll_lines: List[RollLineIn]
 
 
+class SoReleaseRollsIn(BaseModel):
+    """AS-03 — Admin Sales MELEPAS SEBAGIAN roll ter-reserve pada 1 baris SO pendingan.
+    Status SO tetap; jejak siapa/kapan/alasan disimpan di `reservation_releases`."""
+    roll_ids: List[str]
+    reason: str = Field(..., min_length=5)
+
+
+class PRLineQtyIn(BaseModel):
+    """AS-02 — MD/pembelian menaikkan qty beli baris PR yang lahir dari SO (tidak
+    terkunci ke qty pesanan); alasan wajib, jejak di `qty_history`."""
+    quantity: float = Field(..., gt=0)
+    reason: str = Field(..., min_length=5)
+
+
 class ReconcileItemIn(BaseModel):
     product_id: str
     quantity: float = Field(0, ge=0)

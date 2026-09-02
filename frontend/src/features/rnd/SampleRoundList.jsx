@@ -9,6 +9,7 @@
  * padahal ia round pertama jenis lain — dan tombol "Buka round berikutnya" akan
  * menaruh perbaikan warna ke dalam kuota perbaikan handfeel.
  */
+import { useEffect } from "react";
 import { CheckCircle2, FileImage, Paperclip, Plus, Send, Upload } from "lucide-react";
 import { roundProofUrl } from "./rndApi";
 import { ROUND_RESULT_META } from "./rndMeta";
@@ -17,9 +18,16 @@ import {
 } from "./sampleTypeMeta";
 
 export default function SampleRoundList({ sample, types, measurements, canSubmit,
-  canAssess, onUpload, onSubmit, onAssess, onOpenRound, busy, loading = false }) {
+  canAssess, onUpload, onSubmit, onAssess, onOpenRound, busy, loading = false,
+  highlightRoundId = "" }) {
   const kinds = sampleTypesOf(sample);
   const decided = sample.status === "decided" || sample.status === "cancelled";
+  // MD-06 — deep-link dari riwayat labdip: gulir ke putaran yang dituju.
+  useEffect(() => {
+    if (!highlightRoundId || loading) return;
+    const el = document.querySelector(`[data-testid="round-row-${highlightRoundId}"]`);
+    if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [highlightRoundId, loading, sample?.id]);
 
   if (loading) {
     return (
@@ -100,7 +108,9 @@ export default function SampleRoundList({ sample, types, measurements, canSubmit
                     const meas = Object.entries(r.measurements || {})
                       .filter(([, v]) => v !== null && v !== undefined && v !== "");
                     return (
-                      <div key={r.id} className="px-3 py-2.5" data-testid={`round-row-${r.id}`}>
+                      <div key={r.id} data-testid={`round-row-${r.id}`}
+                        className={`px-3 py-2.5 ${r.id === highlightRoundId ? "bg-[#FFF8EE] ring-1 ring-inset ring-[#F5C26B]" : ""}`}
+                        data-highlight={r.id === highlightRoundId ? "true" : undefined}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-[11.5px] font-bold">
                             rnd {r.round_no}

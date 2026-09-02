@@ -6,14 +6,14 @@ Status pengerjaan dicatat di kolom terakhir; butir "Perlu diputuskan" JANGAN mas
 | Kode | Butir | Sifat | Perlu diputuskan | Status |
 |---|---|---|---|---|
 | AS-01 | Persetujuan manajer setelah Admin Sales dihapus (matikan `sales.require_so_validation`, tetapkan ambang) | Pengaturan | Hanya persetujuan nilai, atau juga kredit & harga khusus? (saran: kredit & harga khusus tetap) | ✅ SELESAI (iter281) |
-| AS-02 | PR dari keputusan pemenuhan boleh naik ke MOQ supplier; simpan qty-untuk-pesanan & qty-kelebihan-stok | Sedang | Otomatis atau ditawarkan ke Admin Sales? (saran: ditawarkan) | BELUM |
-| AS-03 | Buka kunci reservasi SEBAGIAN pada SO pendingan: lepas roll, status SO tetap, tolak bila ATP tak cukup, catat siapa/kapan/alasan | Sedang | Wewenang Admin Sales atau manajer? Per baris atau seluruh SO? (saran: Admin Sales, per baris) | BELUM |
+| AS-02 | PR dari keputusan pemenuhan boleh naik ke MOQ supplier; simpan qty-untuk-pesanan & qty-kelebihan-stok | Sedang | Otomatis atau ditawarkan ke Admin Sales? (saran: ditawarkan) | ✅ SELESAI 2026-09-02 (sesi #073) — `PATCH /purchase-requisitions/{id}/lines/{line_no}` naikkan qty beli (order_qty/extra_qty/qty_history), UI "ubah qty" di detail PR |
+| AS-03 | Buka kunci reservasi SEBAGIAN pada SO pendingan: lepas roll, status SO tetap, tolak bila ATP tak cukup, catat siapa/kapan/alasan | Sedang | Wewenang Admin Sales atau manajer? Per baris atau seluruh SO? (saran: Admin Sales, per baris) | ✅ SELESAI 2026-09-02 (sesi #073) — `POST /sales-orders/{id}/items/{pid}/release-rolls` (izin inventory.pegging, alasan wajib, status SO tetap, jejak `reservation_releases`), UI "Lepas Roll" |
 | MD-01 | Jenis barang **Benang** di spesifikasi R&D (isian khas benang, bukan gramasi/lebar) | Sedang | — (rancang bersama MD-02) | BELUM |
 | MD-02 | Master data Benang (kategori jenis bahan: katun/poliester/rayon/campuran, dst.) | Sedang | Atribut lain: nomor benang & sistem (Ne/Nm/Denier/Tex), ply, arah puntiran, warna/status celup, supplier, satuan simpan? | BELUM |
 | MD-03 | Pratinjau gambar artwork & kotak warna saat memilih desain/warna di R&D | Ringan | — | ✅ SELESAI (iter281 + fix KNSelect Radix `opt.render` + artwork seed 480×360, 2026-09-02) |
 | MD-04 | Hapus kolom target harga jual dari formulir spesifikasi R&D (data lama tetap) | Ringan | — | ✅ SELESAI (iter281) |
 | MD-05 | Proofing: hasil cukup foto & catatan; labdip/handfeel tetap kolom ukur | Ringan | — | ✅ SELESAI (iter281; seed KPI & POC S disesuaikan 2026-09-02) |
-| MD-06 | Riwayat labdip per barang/warna + kolom tanggal butuh + navigasi ke detail putaran | Sedang | "Tanggal butuh" per permintaan sample atau per putaran? | BELUM |
+| MD-06 | Riwayat labdip per barang/warna + kolom tanggal butuh + navigasi ke detail putaran | Sedang | "Tanggal butuh" per permintaan sample atau per putaran? | ✅ SELESAI 2026-09-02 (sesi #073) — `GET /rnd/labdip-history` + modal Riwayat Labdip (Pustaka Warna & detail sample), tanggal butuh per putaran (`due_date`), deep-link ke putaran |
 | MD-07 | Nama warna ganda (nama pabrik + nama KN) di Pustaka Warna, pencarian kenali keduanya | Ringan | — | ✅ SELESAI (iter281; 5 warna seed ber-`factory_name` demo) |
 | MD-08 | Kode/nama produk ganda (supplier ↔ KN) dipakai di pencarian katalog, PR/PO, penerimaan | Sedang | — | BELUM |
 | PB-01 | Blanket PO & Kontrak: termin, jatuh tempo, jenis bayar, PPN, harga include/exclude PPN → turun ke PO | Sedang | — | BELUM |

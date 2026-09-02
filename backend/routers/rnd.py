@@ -270,6 +270,21 @@ async def list_samples(request: Request, entity_id: Optional[str] = Query(None),
     return {"count": len(rows), "items": rows, "stats": await smp.stats(scope)}
 
 
+@router.get("/rnd/labdip-history")
+async def labdip_history(request: Request, entity_id: Optional[str] = Query(None),
+                         color_id: str = Query(""), product_id: str = Query(""),
+                         type_code: str = Query("labdip")) -> Dict[str, Any]:
+    """MD-06 — riwayat labdip per warna/barang (tanggal butuh per putaran + tautan)."""
+    await require_permission(request, "rnd", "view")
+    ctx = await entity_ctx(request)
+    scope = resolve_list_scope("md_samples", {}, ctx, entity_id)
+    try:
+        return await smp.labdip_history(scope, color_id=color_id, product_id=product_id,
+                                        type_code=type_code)
+    except RndError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.post("/rnd/samples")
 async def create_sample(payload: SampleInput, request: Request) -> Dict[str, Any]:
     actor = await require_permission(request, "rnd", "create")

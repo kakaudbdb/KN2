@@ -35,6 +35,7 @@ export default function RndSamplesView({ currentUser, selectedEntity, focus, onF
   const [lineFilter, setLineFilter] = useState("");   // FASE L
   const [showForm, setShowForm] = useState(false);
   const [openId, setOpenId] = useState("");
+  const [focusRoundId, setFocusRoundId] = useState("");   // MD-06 — putaran yang dituju
   // Deep-link (event `kn-open-rnd`): prefill form dari Pustaka Warna / kartu desain,
   // atau buka permintaan tertentu dari nomornya (tautan "asal harga" di kontrak).
   const [prefill, setPrefill] = useState(null);
@@ -72,7 +73,7 @@ export default function RndSamplesView({ currentUser, selectedEntity, focus, onF
   // ── Deep-link masuk ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!focus?.nonce) return;
-    if (focus.sampleId) setOpenId(focus.sampleId);
+    if (focus.sampleId) { setOpenId(focus.sampleId); setFocusRoundId(focus.roundId || ""); }
     else if (focus.sampleNumber) setPendingNumber(focus.sampleNumber);
     if (focus.colorId || focus.designId) {
       setPrefill({
@@ -262,10 +263,11 @@ export default function RndSamplesView({ currentUser, selectedEntity, focus, onF
           }} />
       )}
       {openId && (
-        <DetailModal onClose={() => setOpenId("")}
+        <DetailModal onClose={() => { setOpenId(""); setFocusRoundId(""); }}
           label="Rincian sample" testId="sample-detail-modal">
           <SampleDetailPanel sampleId={openId} currentUser={currentUser} types={types}
-            onClose={() => setOpenId("")} onChanged={load} />
+            focusRoundId={focusRoundId}
+            onClose={() => { setOpenId(""); setFocusRoundId(""); }} onChanged={load} />
         </DetailModal>
       )}
     </div>

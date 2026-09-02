@@ -30,6 +30,9 @@ export const releaseProduct = (id, reason, note = "") =>
 export const listSamples = (params) =>
   axios.get(`${API}/rnd/samples`, { params }).then((r) => r.data);
 export const getSample = (id) => axios.get(`${API}/rnd/samples/${id}`).then((r) => r.data);
+// MD-06 — riwayat labdip per warna / barang (tanggal butuh per putaran).
+export const labdipHistory = (params) =>
+  axios.get(`${API}/rnd/labdip-history`, { params }).then((r) => r.data);
 export const createSample = (body) => axios.post(`${API}/rnd/samples`, body).then((r) => r.data);
 export const patchSample = (id, body) =>
   axios.patch(`${API}/rnd/samples/${id}`, body).then((r) => r.data);

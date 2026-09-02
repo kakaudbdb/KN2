@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Ban, Beaker, CheckCircle2, GitBranch, PackageMinus, Send, Trophy, X,
+  Ban, Beaker, CheckCircle2, GitBranch, History, PackageMinus, Send, Trophy, X,
 } from "lucide-react";
 import { overlayDismiss } from "@/utils/overlayDismiss";
 import { formatCurrency, formatQty } from "../../utils/formatters";
@@ -24,6 +24,7 @@ import RoundActionModal from "./RoundActionModal";
 import SampleFinishModal from "./SampleFinishModal";
 import SampleRoundList from "./SampleRoundList";
 import SampleSendModal from "./SampleSendModal";
+import LabdipHistoryModal from "./LabdipHistoryModal";   // MD-06
 import {
   assessRound, cancelSample, decideSample, deliverSample, finishSample, getSample,
   issueMaterial, openRound, rndMeta, sendSample, submitRound, uploadRoundProof,
@@ -32,8 +33,9 @@ import { errMsg, ROUND_RESULT_META, SAMPLE_STATUS_META } from "./rndMeta";
 import { deliverLabel, roundTypeOf, sampleTypesOf, typeLabel } from "./sampleTypeMeta";
 
 export default function SampleDetailPanel({ sampleId, currentUser, types: typesProp,
-  onClose, onChanged }) {
+  onClose, onChanged, focusRoundId = "" }) {
   const [sample, setSample] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);   // MD-06
   const [policy, setPolicy] = useState({});
   const [reasons, setReasons] = useState([]);
   const [types, setTypes] = useState(typesProp || []);
@@ -136,6 +138,14 @@ export default function SampleDetailPanel({ sampleId, currentUser, types: typesP
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            {sample?.color_target?.color_id && (
+              <button className="secondary-button !px-2 !py-1 text-[10.5px]"
+                data-testid="sample-labdip-history-button"
+                title="Riwayat labdip warna ini lintas permintaan (MD-06)"
+                onClick={() => setHistoryOpen(true)}>
+                <History size={12} /> Riwayat labdip
+              </button>
+            )}
             <button className="secondary-button !px-2 !py-1 text-[10.5px]"
               data-testid="sample-trace-button" disabled={!sample}
               title="Lihat rantai dokumen: spesifikasi → sample → kontrak → PO"
@@ -270,7 +280,7 @@ export default function SampleDetailPanel({ sampleId, currentUser, types: typesP
 
           {/* Timeline round per supplier × jenis (komponen terpisah) */}
           <SampleRoundList sample={sample || {}} types={types} measurements={measurements}
-            busy={busy} loading={loading && !sample}
+            busy={busy} loading={loading && !sample} highlightRoundId={focusRoundId}
             canSubmit={canSubmit} canAssess={canAssess}
             onUpload={uploadProof}
             onSubmit={(r) => setModal({ kind: "submit", round: r })}
@@ -405,6 +415,11 @@ export default function SampleDetailPanel({ sampleId, currentUser, types: typesP
           onClose={() => setModal(null)}
           onConfirm={(body) => act(() => sendSample(sample.id, body),
             "Permintaan terkirim — round 1 dibuka untuk tiap supplier × jenis.")} />
+      )}
+      {historyOpen && sample && (
+        <LabdipHistoryModal colorId={sample.color_target?.color_id}
+          label={`warna ${sample.color_target?.code || ""} · ${sample.color_target?.name || ""}`}
+          entityId={sample.entity_id} onClose={() => setHistoryOpen(false)} />
       )}
       {modal?.kind === "round" && (
         <SampleSendModal mode="round" sample={sample} participant={modal.participant}

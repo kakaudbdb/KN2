@@ -111,3 +111,11 @@ tersisa action items minor).
 - Regresi MD-05 diperbaiki: `scripts/seed_rnd_kpi_demo.py` & `backend/test_core_sampling_poc.py` — proofing tanpa hasil ukur (POC S 66/66, seed KPI desainer 4 permintaan).
 - Verifikasi: testing agent iteration_282 BE 100% / FE 100%, pytest iter279–281 hijau.
 - Status catatan demo: AS-01, MD-03, MD-04, MD-05, MD-07, PB-02 = SELESAI. **Berikutnya (gelombang 3, keputusan owner sudah ada):** AS-02, AS-03, MD-06, PB-01; lalu T9–T11 & seed D1–D5.
+
+## 2026-09-02 — Sesi #073: Gelombang 3 catatan demo (AS-02 · AS-03 · MD-06) + lencana artwork
+- AS-02: `PATCH /api/purchase-requisitions/{id}/lines/{line_no}` — qty beli PR (termasuk PR dari SO) boleh dinaikkan; `order_qty`/`extra_qty`/`qty_history`; UI "ubah qty" di detail PR.
+- AS-03: `POST /api/sales-orders/{id}/items/{pid}/release-rolls` — Admin Sales melepas roll sebagian per baris; status SO tetap; jejak `reservation_releases`; UI "Lepas Roll" + log.
+- MD-06: `GET /api/rnd/labdip-history` + modal Riwayat Labdip (Pustaka Warna & detail sample), tanggal butuh per putaran, deep-link + highlight putaran.
+- Galeri Desain: lencana "Belum ada artwork" pada kartu tanpa berkas.
+- Verifikasi: `iter283_as02_as03_scenario.py` 21/21, testing agent iteration_283 BE 100% / FE 100%.
+- **Berikutnya:** PB-01 (blanket PO/kontrak → PO), MD-01/02/08, FB-01/02; audit training T9–T11; seed D1–D5.

@@ -5,12 +5,13 @@
  * Akses: admin/manager kelola penuh; sales boleh tambah (quick-create).
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Palette, Search, Plus, RefreshCw, Pencil, Ban, X, Save, Layers } from "lucide-react";
+import { Palette, Search, Plus, RefreshCw, Pencil, Ban, X, Save, Layers, History } from "lucide-react";
 import axios, { API } from "../../services/apiClient";
 import KNSelect from "../../components/KNSelect";
 import ErrorNotice from "../../components/ErrorNotice";
 import { overlayDismiss } from "@/utils/overlayDismiss";
 import { openRnd } from "../rnd/rndDeepLink";
+import LabdipHistoryModal from "../rnd/LabdipHistoryModal";   // MD-06 — riwayat labdip per warna
 import { askConfirm } from "@/services/confirmService";
 
 const SYSTEMS = [
@@ -35,6 +36,7 @@ export default function ColorLibraryView({ currentUser }) {
   const [system, setSystem] = useState("");
   const [status, setStatus] = useState("active");
   const [modal, setModal] = useState(null); // {mode, color}
+  const [history, setHistory] = useState(null); // MD-06 — {colorId, label}
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -132,15 +134,23 @@ export default function ColorLibraryView({ currentUser }) {
                       <span className="font-mono">{c.hex}</span>
                     </p>
                     {canCreate && c.status !== "inactive" && (
-                      <button data-testid={`color-labdip-${c.id}`}
-                        title="Buat permintaan labdip memakai warna ini (PS-13: warna dari pustaka, bukan teks bebas)"
-                        className="mt-1.5 w-full rounded border border-[#E5E5EA] px-1 py-[3px] text-[9.5px] font-bold text-[#0058CC] hover:border-[#0058CC] hover:bg-[#F2F7FF]"
-                        onClick={() => openRnd({
-                          view: "rnd-samples", colorId: c.id,
-                          colorLabel: `warna ${c.code} · ${c.name}`,
-                        })}>
-                        Buat Labdip
-                      </button>
+                      <div className="mt-1.5 flex gap-1">
+                        <button data-testid={`color-labdip-${c.id}`}
+                          title="Buat permintaan labdip memakai warna ini (PS-13: warna dari pustaka, bukan teks bebas)"
+                          className="flex-1 rounded border border-[#E5E5EA] px-1 py-[3px] text-[9.5px] font-bold text-[#0058CC] hover:border-[#0058CC] hover:bg-[#F2F7FF]"
+                          onClick={() => openRnd({
+                            view: "rnd-samples", colorId: c.id,
+                            colorLabel: `warna ${c.code} · ${c.name}`,
+                          })}>
+                          Buat Labdip
+                        </button>
+                        <button data-testid={`color-history-${c.id}`}
+                          title="Riwayat labdip warna ini (MD-06): putaran, tanggal butuh, hasil"
+                          className="rounded border border-[#E5E5EA] px-1.5 py-[3px] text-[#6B6B73] hover:border-[#0058CC] hover:text-[#0058CC]"
+                          onClick={() => setHistory({ colorId: c.id, label: `warna ${c.code} · ${c.name}` })}>
+                          <History size={11} />
+                        </button>
+                      </div>
                     )}
                   </div>
                   {canManage && (
@@ -161,6 +171,9 @@ export default function ColorLibraryView({ currentUser }) {
       {modal && (
         <ColorModal mode={modal.mode} color={modal.color} onClose={() => setModal(null)}
           onSaved={() => { setModal(null); load(); }} onError={setError} />
+      )}
+      {history && (
+        <LabdipHistoryModal colorId={history.colorId} label={history.label} onClose={() => setHistory(null)} />
       )}
     </div>
   );
