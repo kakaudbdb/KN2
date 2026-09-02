@@ -313,6 +313,28 @@ async def export_products(request: Request) -> Response:
                     headers={"Content-Disposition": "attachment; filename=products.csv"})
 
 
+@router.get("/master-data/export-yarn")
+async def export_yarn(request: Request) -> Response:
+    """MD-02/08 — katalog BENANG + kode versi supplier (CSV untuk dibagikan ke pabrik)."""
+    await require_permission(request, "product", "export")
+    from services.supplier_item_service import attach_supplier_codes
+    rows = await db.products.find({"stage": "yarn"}, {"_id": 0}).to_list(2000)
+    await attach_supplier_codes(rows)
+    for r in rows:
+        r["supplier_skus"] = " | ".join(c.get("supplier_sku", "") for c in r.get("supplier_codes", []) if c.get("supplier_sku"))
+        r["supplier_item_names"] = " | ".join(c.get("supplier_item_name", "") for c in r.get("supplier_codes", []) if c.get("supplier_item_name"))
+        r["supplier_names"] = " | ".join(sorted({c.get("supplier_name", "") for c in r.get("supplier_codes", []) if c.get("supplier_name")}))
+    fields = ["sku", "name", "category", "grade", "yarn_count", "yarn_count_system", "yarn_material",
+              "yarn_ply", "yarn_twist", "yarn_dye_status", "color", "base_unit", "price", "supplier",
+              "supplier_skus", "supplier_item_names", "supplier_names", "status"]
+    out = io.StringIO()
+    writer = csv.DictWriter(out, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(_sanitize_rows(rows, fields))
+    return Response(content=out.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=katalog_benang.csv"})
+
+
 @router.get("/master-data/export-customers")
 async def export_customers(request: Request) -> Response:
     await require_permission(request, "customer", "export")

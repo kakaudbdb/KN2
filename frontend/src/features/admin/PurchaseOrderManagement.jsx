@@ -299,6 +299,7 @@ export default function PurchaseOrderManagement({ user, selectedEntity, onApprov
               <input data-testid="po-search" value={search} onChange={(e) => setSearch(e.target.value)}
                 className="field !pl-8 !py-1.5 text-[12px]" placeholder="Cari No. PO / supplier..." />
             </div>
+            {user?.role !== "finance" && (
             <div className="relative">
             <button data-testid="create-po-button"
               onClick={() => setMenuOpen((o) => !o)}
@@ -329,6 +330,7 @@ export default function PurchaseOrderManagement({ user, selectedEntity, onApprov
               </>
             )}
           </div>
+            )}
           </div>
         </div>
       </div>

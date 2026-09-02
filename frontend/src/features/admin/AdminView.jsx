@@ -269,6 +269,10 @@ export default function AdminView({
               <button data-testid="admin-dry-run-button" className="secondary-button" disabled={importLoading} onClick={handleDryRunImport}>{importLoading ? "..." : "Preview Dry-Run"}</button>
               <button data-testid="admin-import-button" className="secondary-button" onClick={() => { onImportMaster(currentResource, importFile, false); setImportPreview(null); }}>Impor</button>
               <button data-testid="admin-export-csv-button" className="secondary-button" onClick={() => onExportMaster(currentResource, "csv")}>Ekspor CSV</button>
+              {tab === "products" && (
+                <button data-testid="admin-export-yarn-button" className="secondary-button" title="Katalog benang + kode versi supplier (MD-02/08) — untuk dibagikan ke pabrik"
+                  onClick={() => onExportMaster("yarn", "csv")}>Ekspor Katalog Benang</button>
+              )}
             </div>
             {importPreview && (
               <div data-testid="import-preview-result" className="rounded-md border border-[#EFF0F2] bg-white p-2 text-[11.5px]">

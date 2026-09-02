@@ -176,6 +176,7 @@ SCOPED_COLLECTIONS = {
     "supplier_price_lists",           # daftar harga supplier = data komersial entitas
     "rfid_tags", "rfid_reads",        # tag & pembacaan RFID mengikuti roll/entitas
     "rnd_person_divisions",           # penugasan orang R&D per entitas
+    "customer_feedbacks",             # 2026-09 — feedback/komplain pelanggan per SO (warisan entitas SO)
     # ── FASE E-4 (E4.2/E4.3) — master berlapis (global → badan usaha). Terdaftar
     # SCOPED supaya gate kepatuhan ikut menjaga; baris global tetap sah dan dibaca
     # lewat `resolve_list_scope_inherit`/`entity_master_service`.

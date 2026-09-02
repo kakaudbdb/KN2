@@ -184,6 +184,8 @@ export const ROLE_NAV = {
       "cash-bank", "cash-management",
       "tax-hub", "tax-invoices",
       "store-credit",
+      // 2026-09 — hutang jatuh tempo (Meja Finance) → PO hanya-lihat
+      "pembelian", "purchase-orders", "purchasing",
     ],
     remove: [],
   },

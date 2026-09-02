@@ -24,7 +24,7 @@ DUA MEJA, SESUAI KEPUTUSAN PEMILIK (E8.10b#2)
 Tiap baris membawa: konteks pelanggan · nilai · **umur (hari)** · tindakan tunggal.
 Umur dipakai sebagai isyarat SLA: makin tua, makin merah di layar.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from db import db
@@ -354,10 +354,48 @@ async def finance_desk(actor: Dict[str, Any], scope: Dict[str, Any],
               badge="lewat", action="Tagih", action_kind="open") for r in lewat],
         action_label="Tagih", owner="finance"))
 
+    # 6 — HUTANG jatuh tempo (PB-01 lanjutan): PO ber-`payment_due_date` (turun dari termin
+    # kontrak/supplier) yang belum lunas, lewat atau ≤7 hari lagi — lencana merah bila lewat.
+    today = datetime.now(timezone.utc).date()
+    horizon = (today + timedelta(days=7)).isoformat()
+    pos = await db.purchase_orders.find(
+        _q(scope, {"payment_due_date": {"$gt": "", "$lte": horizon},
+                   "status": {"$nin": ["cancelled", "closed", "draft", "rejected"]},
+                   "po_type": {"$ne": "blanket"},
+                   "payment_status": {"$ne": "paid"}}),
+        {"_id": 0, "id": 1, "po_number": 1, "supplier_name": 1, "payment_due_date": 1,
+         "grand_total": 1, "total_amount": 1, "amount_paid": 1, "outstanding": 1,
+         "payment_term_code": 1, "parent_po_number": 1, "status": 1}
+    ).sort("payment_due_date", 1).to_list(200)
+    hutang_rows = []
+    for p in pos:
+        base = float(p.get("grand_total") or p.get("total_amount") or 0)
+        sisa = float(p.get("outstanding") if p.get("outstanding") is not None
+                     else base - float(p.get("amount_paid") or 0))
+        if sisa <= 0.01:
+            continue
+        due = datetime.fromisoformat(p["payment_due_date"]).date()
+        late = (today - due).days
+        hutang_rows.append(_row(
+            ref_type="purchase_order", ref_id=p["id"], number=p.get("po_number", "—"),
+            title=p.get("supplier_name", "—"),
+            subtitle=(f"lewat {late} hari" if late > 0 else ("jatuh tempo hari ini" if late == 0
+                      else f"{-late} hari lagi")) + f" · {p.get('payment_term_code') or 'tanpa termin'}"
+                     + (f" · kontrak {p['parent_po_number']}" if p.get("parent_po_number") else ""),
+            value=sisa, age_days=max(0, late),
+            badge="lewat" if late > 0 else "segera",
+            action="Bayar", action_kind="open",
+            extra={"payment_due_date": p["payment_due_date"], "overdue": late > 0}))
+    queues.append(_queue(
+        "hutang_jatuh_tempo", "Hutang supplier jatuh tempo",
+        "PO belum lunas yang sudah lewat / ≤7 hari menuju jatuh tempo bayar (termin kontrak/supplier).",
+        hutang_rows, action_label="Bayar", owner="finance"))
+
     return {"desk": "finance", "desk_label": "Meja Finance",
             "generated_at": now_iso(), "entity_ids": entity_ids,
             "queues": queues,
-            "totals": {"open_items": sum(q["count"] for q in queues)},
+            "totals": {"open_items": sum(q["count"] for q in queues),
+                       "ap_overdue": sum(1 for r in hutang_rows if r.get("overdue"))},
             "not_my_desk": ["Membuat / mengonfirmasi pesanan",
                             "Keputusan pemenuhan (ambil dari PT lain · reorder)",
-                            "Sisi hutang: tagihan supplier · kontrabon · landed cost"]}
+                            "Sisi hutang lainnya: tagihan supplier · kontrabon · landed cost"]}

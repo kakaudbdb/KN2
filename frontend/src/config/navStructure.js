@@ -118,10 +118,10 @@ export const NAV_STRUCTURE = [
     groupId: "pembelian",
     label:   "Pembelian",
     icon:    ClipboardList,
-    roles:   ["admin", "manager", "warehouse"],
+    roles:   ["admin", "manager", "warehouse", "finance"],
     items: [
       { id: "sourcing",         label: "Pengadaan (Sourcing)",    icon: Target,        roles: ["admin", "manager", "warehouse"], hub: "sourcing" },
-      { id: "purchase-orders",  label: "Pesanan Pembelian (PO)",  icon: ClipboardList, roles: ["admin", "manager"],              hub: "purchase-orders" },
+      { id: "purchase-orders",  label: "Pesanan Pembelian (PO)",  icon: ClipboardList, roles: ["admin", "manager", "finance"],   hub: "purchase-orders" },
       { id: "accounts-payable", label: "Hutang Supplier (AP)",    icon: Receipt,       roles: ["admin", "manager", "warehouse"], hub: "accounts-payable" },
       { id: "master-pembelian", label: "Master Pembelian",        icon: Factory,       roles: ["admin", "manager"],              hub: "master-pembelian" },
       { id: "cs-bom",           label: "BOM Printing",            icon: Printer,       roles: ["admin"], comingSoon: true },

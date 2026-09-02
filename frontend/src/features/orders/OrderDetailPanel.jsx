@@ -22,6 +22,7 @@ import AmendmentTrailPanel from "../finance/amendments/AmendmentTrailPanel";
 import ReallocateRollsModal from "./ReallocateRollsModal";
 // AS-03 — Lepas reservasi SEBAGIAN per baris (Admin Sales, alasan wajib, status SO tetap).
 import ReleaseRollsModal from "./ReleaseRollsModal";
+import OrderFeedbackPanel from "./OrderFeedbackPanel";   // feedback/komplain pelanggan per SO
 // F1b — arti `price_source` yang di-snapshot pada baris SO (dari resolver harga).
 const PRICE_SOURCE_BADGE = {
   special_approval: { label: "Harga khusus", fg: "#6B219A", bg: "#F3E9FA" },
@@ -314,6 +315,9 @@ export function OrderDetailPanel({
             </div>
           ))}
         </div>
+
+        {/* Feedback / komplain pelanggan per SO (2026-09) */}
+        <OrderFeedbackPanel order={sel} canEdit={can(perms, "order", "update")} />
 
         {/* AS-03 — jejak pelepasan reservasi sebagian (siapa · kapan · alasan) */}
         {(sel.reservation_releases || []).length > 0 && (

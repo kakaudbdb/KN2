@@ -152,6 +152,7 @@ export function ageTone(days) {
 // satu klik (memakai `openDocument` yang sudah ada: navigasi + auto-buka dokumen).
 export const ROW_TARGET = {
   sales_order:      { view: "orders",            nav_id: "sales-orders",  focus_type: "sales_order" },
+  purchase_order:   { view: "purchasing",        nav_id: "purchase-orders", focus_type: "purchase_order" },
   sales_return:     { view: "returns",           nav_id: "sales-orders",  focus_type: "sales_return" },
   internal_request: { view: "internal-requests", nav_id: "sales-orders",  focus_type: "internal_request" },
   customer:         { view: "customers-crm",     nav_id: "customers-crm", focus_type: "customer" },
@@ -164,6 +165,7 @@ export const FINANCE_QUEUE_TARGET = {
   selisih_bayar:     { view: "payment-plans", nav_id: "payment-plans" },
   denda_draft:       { view: "payment-plans", nav_id: "payment-plans" },
   jatuh_tempo:       { view: "ar-aging", nav_id: "ar-aging" },
+  hutang_jatuh_tempo: { view: "purchasing", nav_id: "purchase-orders", focus_type: "purchase_order" },
 };
 
 export function rowLink(row, queueId = "", desk = "sales_admin") {

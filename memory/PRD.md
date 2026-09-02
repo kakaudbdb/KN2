@@ -127,3 +127,10 @@ tersisa action items minor).
 - Lencana merah "Labdip telat N" di kartu Pustaka Warna (putaran terbuka lewat tanggal butuh) → buka riwayat labdip.
 - Verifikasi: testing agent iteration_284 BE 100% / FE 100% (pytest `test_iter284_pb01_md02_md08.py` 13/13).
 - **Berikutnya:** FB-01/FB-02 (modul baru), audit training T9–T11, seed D1–D5.
+
+## 2026-09-02 — Sesi #075: Feedback Pelanggan per SO · Ekspor Katalog Benang · Hutang Jatuh Tempo
+- Feedback/komplain pelanggan per SO (`customer_feedbacks`, `/api/customer-feedback`): kategori, tingkat, penanggung jawab, tenggat, status open→in_progress→resolved→closed (penyelesaian wajib), timeline; panel di detail SO.
+- Ekspor Katalog Benang CSV (`/api/master-data/export-yarn`) dengan kode/nama versi supplier; tombol di Master Produk.
+- Meja Finance: antrean "Hutang supplier jatuh tempo" (lencana merah lewat tempo, ≤7 hari segera) → layar PO (finance kini hanya-lihat PO). Backfill `scripts/backfill_po_payment_due.py`.
+- Verifikasi: testing agent iteration_285 BE 100% / FE lulus (bug navigasi Bayar diperbaiki + verifikasi Playwright).
+- **Berikutnya:** FB-01 (AI Galeri Desain) / FB-02 catatan demo; audit training T9–T11; seed D1–D5.
