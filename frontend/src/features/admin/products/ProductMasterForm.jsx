@@ -143,6 +143,7 @@ export default function ProductMasterForm({
                 </p>
               </div>
             </div>
+            {!isYarn && (
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">
@@ -171,24 +172,57 @@ export default function ProductMasterForm({
                   onChange={(v) => set({ lebar: v })} />
               </div>
             </div>
+            )}
             {isYarn && (
-              <div className="grid grid-cols-2 gap-2" data-testid="admin-product-yarn-fields">
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">
-                    Nomor Benang {req("yarn_count") ? "*" : ""}
-                  </label>
-                  <input data-testid="admin-product-yarn_count-input" className="field"
-                    placeholder="mis. 30s / 150D" value={product.yarn_count ?? ""}
-                    onChange={(e) => set({ yarn_count: e.target.value })} />
+              <div className="rounded-md border border-[#DCE7F7] bg-[#F7FAFF] p-2.5 space-y-2" data-testid="admin-product-yarn-fields">
+                <p className="text-[10.5px] font-bold uppercase tracking-wide text-[#0058CC]">Isian khas benang (MD-02) — bukan gramasi/lebar</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">Grade *</label>
+                    <KNSelect data-testid="admin-product-grade-input" className="field"
+                      value={product.grade ?? ""} placeholder="Pilih grade"
+                      onValueChange={(v) => set({ grade: v })} options={options("grade")} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">
+                      Nomor Benang {req("yarn_count") ? "*" : ""}
+                    </label>
+                    <input data-testid="admin-product-yarn_count-input" className="field"
+                      placeholder="mis. 30s / 150D" value={product.yarn_count ?? ""}
+                      onChange={(e) => set({ yarn_count: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">Sistem Nomor</label>
+                    <KNSelect data-testid="admin-product-yarn_count_system-input" className="field"
+                      value={product.yarn_count_system ?? ""} placeholder="Ne / Nm / Denier / Tex"
+                      onValueChange={(v) => set({ yarn_count_system: v })}
+                      options={options("yarn_count_system")} />
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">
-                    Sistem Nomor Benang
-                  </label>
-                  <KNSelect data-testid="admin-product-yarn_count_system-input" className="field"
-                    value={product.yarn_count_system ?? ""} placeholder="Ne / Nm / Denier / Tex"
-                    onValueChange={(v) => set({ yarn_count_system: v })}
-                    options={options("yarn_count_system")} />
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">Bahan benang</label>
+                    <KNSelect data-testid="admin-product-yarn_material-input" className="field"
+                      value={product.yarn_material ?? ""} placeholder="katun / poliester…"
+                      onValueChange={(v) => set({ yarn_material: v })} options={options("yarn_material")} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">Ply</label>
+                    <input data-testid="admin-product-yarn_ply-input" className="field" placeholder="1 / 2"
+                      value={product.yarn_ply ?? ""} onChange={(e) => set({ yarn_ply: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">Puntiran</label>
+                    <KNSelect data-testid="admin-product-yarn_twist-input" className="field"
+                      value={product.yarn_twist ?? ""} placeholder="S / Z"
+                      onValueChange={(v) => set({ yarn_twist: v })} options={options("yarn_twist")} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#8E8E93]">Status celup</label>
+                    <KNSelect data-testid="admin-product-yarn_dye_status-input" className="field"
+                      value={product.yarn_dye_status ?? ""} placeholder="mentah / celup"
+                      onValueChange={(v) => set({ yarn_dye_status: v })} options={options("yarn_dye_status")} />
+                  </div>
                 </div>
               </div>
             )}

@@ -68,6 +68,8 @@ class PurchaseOrderCreate(BaseModel):
     entity_id: str = ""
     order_discount_percent: float = Field(0, ge=0, le=100)  # P0-1 — diskon level order (0–100%)
     tax_mode: str = ""                # P0-1 — "" = ikut config | "ppn" (PPN Masukan) | "non_ppn"
+    payment_term_code: str = ""       # PB-01 — termin; "" = dari kontrak blanket → supplier → config
+    price_includes_ppn: Optional[bool] = None  # PB-01 — None = ikut config; True = harga sudah termasuk PPN
     import_flag: Optional[bool] = None  # R0 — override asal barang: None=ikut supplier.origin_type, True=impor, False=lokal
     # R6.3 — Budget Control: tag anggaran PO (opsional). Default = akun Persediaan (1-1300).
     budget_dimension: Optional[str] = ""   # "account" | "category"
@@ -125,6 +127,10 @@ class BlanketPOCreate(BaseModel):
     notes: str = ""
     created_by: str = "Admin"
     entity_id: str = ""
+    # PB-01 — syarat komersial kontrak → TURUN otomatis ke tiap call-off (PO anak).
+    payment_term_code: str = ""        # kode master payment_terms; "" = ikut supplier
+    tax_mode: str = ""                 # "" = ikut config | "ppn" | "non_ppn"
+    price_includes_ppn: Optional[bool] = None  # None = ikut config; True = harga sudah termasuk PPN
 
 
 class CallOffItemCreate(BaseModel):

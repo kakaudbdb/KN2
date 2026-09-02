@@ -110,6 +110,19 @@ export default function BlanketPODetailPanel({ blanketId, currentUser, onClose, 
           <span>Berlaku: <b className="text-[#3C3C43]">{fmtDate(po.valid_from)}</b> s/d <b className="text-[#3C3C43]">{po.valid_until ? fmtDate(po.valid_until) : "tanpa batas"}</b></span>
         </div>
 
+        {/* PB-01 — termin & PPN kontrak (turun ke tiap call-off) */}
+        <div className="rounded-md border border-[#DCE7F7] overflow-hidden text-[11.5px]" data-testid="blanket-terms">
+          <div className="px-2.5 py-1.5 bg-[#F7FAFF] text-[10px] font-bold uppercase text-[#0058CC] border-b border-[#DCE7F7]">Termin & PPN (PB-01) → turun ke call-off</div>
+          <div className="p-2.5 space-y-1">
+            <Row label="Termin pembayaran" testId="blanket-terms-payment"
+              value={po.payment_term?.code ? `${po.payment_term.code} · ${po.payment_term.name || ""}${po.payment_term.net_days ? ` · jatuh tempo ${po.payment_term.net_days} hari` : ""}${po.payment_term.dp_percent ? ` · DP ${po.payment_term.dp_percent}%` : ""}` : "ikut supplier / pengaturan"} />
+            <Row label="PPN" testId="blanket-terms-tax"
+              value={po.tax_mode === "non_ppn" ? "Non-PPN" : po.tax_mode === "ppn" ? "Kena PPN" : "ikut pengaturan"} />
+            <Row label="Harga sepakat" testId="blanket-terms-incl"
+              value={po.price_includes_ppn === true ? "sudah termasuk PPN" : po.price_includes_ppn === false ? "belum termasuk PPN" : "ikut pengaturan"} />
+          </div>
+        </div>
+
         {/* Ringkasan nilai (plafon/terpakai/sisa) */}
         <div className="rounded-md border border-[#EFF0F2] overflow-hidden text-[11.5px]" data-testid="blanket-value-summary">
           <div className="px-2.5 py-1.5 bg-[#FAFBFC] text-[10px] font-bold uppercase text-[#6B6B73] border-b border-[#EFF0F2]">Plafon Nilai (1.c)</div>

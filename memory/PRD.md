@@ -119,3 +119,11 @@ tersisa action items minor).
 - Galeri Desain: lencana "Belum ada artwork" pada kartu tanpa berkas.
 - Verifikasi: `iter283_as02_as03_scenario.py` 21/21, testing agent iteration_283 BE 100% / FE 100%.
 - **Berikutnya:** PB-01 (blanket PO/kontrak → PO), MD-01/02/08, FB-01/02; audit training T9–T11; seed D1–D5.
+
+## 2026-09-02 — Sesi #074: PB-01 · MD-01/02/08 · lencana labdip telat
+- PB-01: kontrak blanket menyimpan termin (`payment_term`), PPN (`tax_mode`), harga incl/excl PPN → turun otomatis ke call-off/PO (`payment_due_date` = ETA + net_days); UI blok termin di modal buat & detail kontrak, baris termin di detail PO.
+- MD-02/01: master benang (bahan, ply, puntiran, status celup + nomor/sistem) di produk stage Benang & spesifikasi R&D stage Benang; gramasi/lebar disembunyikan.
+- MD-08: kode/nama versi supplier ikut ke katalog (`supplier_codes`); pencarian Master Produk & pemilih produk PR/PO/amandemen cocok di kedua sisi.
+- Lencana merah "Labdip telat N" di kartu Pustaka Warna (putaran terbuka lewat tanggal butuh) → buka riwayat labdip.
+- Verifikasi: testing agent iteration_284 BE 100% / FE 100% (pytest `test_iter284_pb01_md02_md08.py` 13/13).
+- **Berikutnya:** FB-01/FB-02 (modul baru), audit training T9–T11, seed D1–D5.

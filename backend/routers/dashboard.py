@@ -90,6 +90,9 @@ async def dashboard(request: Request, entity_id: str = None) -> Dict[str, Any]:
         product.update({k: (round(v, 2) if isinstance(v, float) else v) for k, v in s.items()})
     total_available = round(total_available, 2)
     total_reserved = round(total_reserved, 2)
+    # MD-08 — kode versi supplier ikut ke Master Produk (pencarian dua sisi).
+    from services.supplier_item_service import attach_supplier_codes
+    await attach_supplier_codes(products)
     return {
         "expired_released": expired,
         "metrics": {

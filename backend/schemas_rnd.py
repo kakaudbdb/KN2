@@ -20,6 +20,11 @@ class SpecTarget(BaseModel):
     lebar: OptQtyDecimal = None    # cm
     yarn_count: str = ""
     yarn_count_system: str = ""
+    # MD-01 — isian khas BENANG (stage `yarn`): bukan gramasi/lebar.
+    yarn_material: str = ""
+    yarn_ply: str = ""
+    yarn_twist: str = ""
+    yarn_dye_status: str = ""
     epi: OptQtyDecimal = None
     ppi: OptQtyDecimal = None
     warp_count: str = ""

@@ -20,6 +20,19 @@ const STAGE_OPTS = [
   { value: "grey", label: "Grey (kain mentah)" },
   { value: "pfd", label: "PFD (siap celup)" },
   { value: "pfp", label: "PFP (siap cetak)" },
+  { value: "yarn", label: "Benang (yarn) — MD-01" },
+];
+// MD-01 — pilihan khas benang (selaras `domain_registry` YARN_*).
+const YARN_SYSTEM_OPTS = ["Ne", "Nm", "Denier", "Tex"].map((v) => ({ value: v, label: v }));
+const YARN_MATERIAL_OPTS = [
+  { value: "katun", label: "Katun" }, { value: "poliester", label: "Poliester" }, { value: "rayon", label: "Rayon / viskosa" },
+  { value: "campuran", label: "Campuran (blend)" }, { value: "sutra", label: "Sutra" }, { value: "linen", label: "Linen" },
+  { value: "nilon", label: "Nilon" }, { value: "lainnya", label: "Lainnya" },
+];
+const YARN_TWIST_OPTS = [{ value: "S", label: "S (kiri)" }, { value: "Z", label: "Z (kanan)" }, { value: "SZ", label: "S/Z (gintir ganda)" }];
+const YARN_DYE_OPTS = [
+  { value: "raw", label: "Mentah / greige" }, { value: "bleached", label: "Putih (bleached)" },
+  { value: "dyed", label: "Celup (dyed)" }, { value: "melange", label: "Melange" },
 ];
 const FABRIC_OPTS = [
   { value: "woven", label: "Woven (tenun)" },
@@ -40,9 +53,11 @@ export default function SpecFormModal({ selectedEntity, types = [], onClose, onS
     title: "", category: "", base_unit: "meter", sku_hint: "",
     sample_type_hint: "labdip", stage: "finished", fabric_type: "woven",
     gramasi: "", lebar: "", grade: "", epi: "", ppi: "",
+    yarn_count: "", yarn_count_system: "", yarn_material: "", yarn_ply: "", yarn_twist: "", yarn_dye_status: "",
     color_id: "", design_id: "", target_price: "", notes: "",
   });
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const isYarn = f.stage === "yarn";   // MD-01 — isian khas benang, bukan gramasi/lebar
   const selColor = useMemo(() => colors.find((c) => c.id === f.color_id), [colors, f.color_id]);
   const selDesign = useMemo(() => designs.find((d) => d.id === f.design_id), [designs, f.design_id]);
 
@@ -81,9 +96,12 @@ export default function SpecFormModal({ selectedEntity, types = [], onClose, onS
         sku_hint: f.sku_hint, sample_type_hint: f.sample_type_hint,
         target: {
           stage: f.stage, fabric_type: f.fabric_type,
-          gramasi: f.gramasi === "" ? null : f.gramasi,
-          lebar: f.lebar === "" ? null : f.lebar,
-          grade: f.grade, epi: f.epi === "" ? null : f.epi, ppi: f.ppi === "" ? null : f.ppi,
+          gramasi: isYarn || f.gramasi === "" ? null : f.gramasi,
+          lebar: isYarn || f.lebar === "" ? null : f.lebar,
+          grade: f.grade, epi: isYarn || f.epi === "" ? null : f.epi, ppi: isYarn || f.ppi === "" ? null : f.ppi,
+          ...(isYarn ? { yarn_count: f.yarn_count, yarn_count_system: f.yarn_count_system,
+            yarn_material: f.yarn_material, yarn_ply: f.yarn_ply, yarn_twist: f.yarn_twist,
+            yarn_dye_status: f.yarn_dye_status } : {}),
         },
         color_target: f.color_id ? { color_id: f.color_id } : {},
         design_id: f.design_id, target_price: f.target_price || 0, notes: f.notes,
@@ -144,12 +162,43 @@ export default function SpecFormModal({ selectedEntity, types = [], onClose, onS
               <KNSelect data-testid="spec-stage" className="field" value={f.stage}
                 options={STAGE_OPTS} onValueChange={(v) => set("stage", v)} />
             </Field>
-            <Field label="Jenis kain *">
+            <Field label={isYarn ? "Untuk kain (woven/knit) *" : "Jenis kain *"}>
               <KNSelect data-testid="spec-fabric" className="field" value={f.fabric_type}
                 options={FABRIC_OPTS} onValueChange={(v) => set("fabric_type", v)} />
             </Field>
           </div>
 
+          {isYarn ? (
+            <div className="rounded-md border border-[#DCE7F7] bg-[#F7FAFF] p-2.5" data-testid="spec-yarn-fields">
+              <p className="mb-2 text-[10.5px] font-bold uppercase tracking-wide text-[#0058CC]">Isian khas benang (MD-01) — bukan gramasi/lebar</p>
+              <div className="grid gap-2.5 md:grid-cols-3">
+                <Field label="Nomor benang *">
+                  <input className="field" data-testid="spec-yarn-count-input" value={f.yarn_count}
+                    onChange={(e) => set("yarn_count", e.target.value)} placeholder="30s / 150D" />
+                </Field>
+                <Field label="Sistem nomor">
+                  <KNSelect data-testid="spec-yarn-count-system" className="field" value={f.yarn_count_system}
+                    options={[{ value: "", label: "—" }, ...YARN_SYSTEM_OPTS]} onValueChange={(v) => set("yarn_count_system", v)} />
+                </Field>
+                <Field label="Bahan benang">
+                  <KNSelect data-testid="spec-yarn-material" className="field" value={f.yarn_material}
+                    options={[{ value: "", label: "—" }, ...YARN_MATERIAL_OPTS]} onValueChange={(v) => set("yarn_material", v)} />
+                </Field>
+                <Field label="Ply">
+                  <input className="field" data-testid="spec-yarn-ply-input" value={f.yarn_ply}
+                    onChange={(e) => set("yarn_ply", e.target.value)} placeholder="1 / 2" />
+                </Field>
+                <Field label="Arah puntiran">
+                  <KNSelect data-testid="spec-yarn-twist" className="field" value={f.yarn_twist}
+                    options={[{ value: "", label: "—" }, ...YARN_TWIST_OPTS]} onValueChange={(v) => set("yarn_twist", v)} />
+                </Field>
+                <Field label="Status celup">
+                  <KNSelect data-testid="spec-yarn-dye" className="field" value={f.yarn_dye_status}
+                    options={[{ value: "", label: "—" }, ...YARN_DYE_OPTS]} onValueChange={(v) => set("yarn_dye_status", v)} />
+                </Field>
+              </div>
+            </div>
+          ) : (
           <div className="grid gap-2.5 md:grid-cols-4">
             <Field label="Gramasi (gsm)">
               <input className="field" data-testid="spec-gramasi-input" value={f.gramasi}
@@ -168,6 +217,7 @@ export default function SpecFormModal({ selectedEntity, types = [], onClose, onS
                 onChange={(e) => set("ppi", e.target.value)} placeholder="58" />
             </Field>
           </div>
+          )}
 
           <div className="grid gap-2.5 md:grid-cols-2">
             <Field label="Warna target (wajib dari Pustaka Warna)">

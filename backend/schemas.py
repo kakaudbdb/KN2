@@ -183,6 +183,10 @@ class ProductPayload(BaseModel):
     fabric_type: str = ""                  # Fase A · PS-02/D-02 — WAJIB sejak stage yarn: woven|knit
     yarn_count: str = ""                   # Fase A · D-22 — nomor benang (wajib stage yarn woven), mis. "30s"
     yarn_count_system: str = ""            # Fase A · D-22 — Ne|Nm|Denier|Tex
+    yarn_material: str = ""                # MD-02 — katun|poliester|rayon|campuran|…
+    yarn_ply: str = ""                     # MD-02 — jumlah ply, mis. "1", "2" (30/2)
+    yarn_twist: str = ""                   # MD-02 — S|Z|SZ
+    yarn_dye_status: str = ""              # MD-02 — raw|bleached|dyed|melange
     supplier: str = "Internal"
     base_unit: str = "meter"
     price: MoneyDecimal = Field(0, ge=0)

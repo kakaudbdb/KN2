@@ -3,6 +3,7 @@ import { Plus, XCircle, Sparkles, AlertTriangle, Receipt } from "lucide-react";
 import { formatCurrency } from "../../../utils/formatters";
 import axios, { API } from "../../../services/apiClient";
 import KNSelect from "../../../components/KNSelect";
+import { productOption, supplierCodesLabel } from "../../../utils/productSearch";   // MD-08
 import DecimalInput from "../../../components/DecimalInput";
 import QtyDual from "../../../components/QtyDual";
 import UomConvertHint from "../../../components/UomConvertHint";
@@ -273,7 +274,7 @@ export default function POCreateForm({
               className="field" placeholder="Pilih Produk"
               options={[
                 { value: "", label: "Pilih Produk" },
-                ...products.map(p => ({ value: p.id, label: `${p.sku} - ${p.name}` })),
+                ...products.map(p => productOption(p, `${p.sku} - ${p.name}${supplierCodesLabel(p)}`)),
               ]}
             />
             <DecimalInput data-testid="item-qty-input" placeholder="Qty" min={0}

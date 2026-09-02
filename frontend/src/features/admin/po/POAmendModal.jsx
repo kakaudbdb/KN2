@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { XCircle, Plus, AlertTriangle, FileEdit, Trash2, Lock } from "lucide-react";
 import { formatCurrency } from "../../../utils/formatters";
 import KNSelect from "../../../components/KNSelect";
+import { productOption, supplierCodesLabel } from "../../../utils/productSearch";   // MD-08
 import { unitOptions } from "../../../utils/uom";                  // FASE U — satuan dari master
 import useUomConversions from "../../../hooks/useUomConversions";  // FASE U — memuat katalog
 
@@ -254,7 +255,7 @@ export default function POAmendModal({
             <div className="grid grid-cols-[1fr_72px_70px_90px_52px_auto] gap-2">
               <KNSelect data-testid="po-amend-new-product" value={newItem.product_id} onValueChange={handleNewProductSelect}
                 className="field" placeholder="Pilih Produk"
-                options={[{ value: "", label: "Pilih Produk" }, ...products.map((p) => ({ value: p.id, label: `${p.sku} - ${p.name}` }))]} />
+                options={[{ value: "", label: "Pilih Produk" }, ...products.map((p) => productOption(p, `${p.sku} - ${p.name}${supplierCodesLabel(p)}`))]} />
               <input data-testid="po-amend-new-qty" type="number" placeholder="Qty" value={newItem.quantity || ""}
                 onChange={(e) => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })} className="field" />
               <KNSelect data-testid="po-amend-new-unit" value={newItem.unit} onValueChange={(v) => setNewItem({ ...newItem, unit: v })}

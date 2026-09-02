@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatQty } from "../../utils/formatters";
 import KNSelect from "../../components/KNSelect";
+import { productOption, supplierCodesLabel } from "../../utils/productSearch";   // MD-08
 import ErrorNotice from "../../components/ErrorNotice";
 import LineFilter from "../../components/LineFilter";   // FASE L
 import { SOURCE_LABEL, StatusPill } from "./prConstants";
@@ -294,7 +295,7 @@ function CreateForm({ products, warehouses, suppliers, selectedEntity, onCancel,
                 value={pickProduct}
                 onValueChange={setPickProduct}
                 placeholder="— Pilih produk —"
-                options={products.filter((p) => p.status !== "inactive").map((p) => ({ value: p.id, label: `${p.sku} · ${p.name}` }))}
+                options={products.filter((p) => p.status !== "inactive").map((p) => productOption(p, `${p.sku} · ${p.name}${supplierCodesLabel(p)}`))}
               />
               <button data-testid="pr-add-line" className="btn-secondary" onClick={addLine} disabled={!pickProduct}><Plus size={14} /> Tambah</button>
             </div>

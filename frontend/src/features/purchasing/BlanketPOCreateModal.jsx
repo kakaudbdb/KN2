@@ -21,6 +21,11 @@ export default function BlanketPOCreateModal({ open, selectedEntity, onClose, on
   const [validUntil, setValidUntil] = useState("");
   const [valueCap, setValueCap] = useState("");
   const [notes, setNotes] = useState("");
+  // PB-01 — syarat komersial kontrak → turun ke tiap call-off.
+  const [paymentTermCode, setPaymentTermCode] = useState("");
+  const [taxMode, setTaxMode] = useState("");
+  const [priceIncl, setPriceIncl] = useState("");   // "" ikut config | "yes" | "no"
+  const [paymentTerms, setPaymentTerms] = useState([]);
   const [rows, setRows] = useState([{ product_id: "", contract_qty: "", contract_price: "", unit: "" }]);
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -31,14 +36,16 @@ export default function BlanketPOCreateModal({ open, selectedEntity, onClose, on
     if (!open) { reset(); return; }
     (async () => {
       try {
-        const [p, s, w] = await Promise.all([
+        const [p, s, w, t] = await Promise.all([
           axios.get(`${API}/products`),
           axios.get(`${API}/suppliers`),
           axios.get(`${API}/warehouses`),
+          axios.get(`${API}/payment-terms`).catch(() => ({ data: [] })),
         ]);
         setProducts(Array.isArray(p.data) ? p.data : []);
         setSuppliers(Array.isArray(s.data) ? s.data : []);
         setWarehouses(Array.isArray(w.data) ? w.data : []);
+        setPaymentTerms(Array.isArray(t.data) ? t.data.filter((x) => x.active !== false) : []);
       } catch (e) { onError?.("Gagal memuat data master."); }
     })();
   }, [open]); // eslint-disable-line
@@ -46,6 +53,7 @@ export default function BlanketPOCreateModal({ open, selectedEntity, onClose, on
   function reset() {
     setSupplierId(""); setSupplierName(""); setSupplierContact(""); setWarehouseId("");
     setValidFrom(""); setValidUntil(""); setValueCap(""); setNotes("");
+    setPaymentTermCode(""); setTaxMode(""); setPriceIncl("");
     setRows([{ product_id: "", contract_qty: "", contract_price: "", unit: "" }]);
   }
 
@@ -130,6 +138,8 @@ export default function BlanketPOCreateModal({ open, selectedEntity, onClose, on
         warehouse_id: warehouseId, items,
         contract_value_cap: Number(valueCap) || 0,
         valid_from: validFrom, valid_until: validUntil, notes,
+        payment_term_code: paymentTermCode, tax_mode: taxMode,
+        price_includes_ppn: priceIncl === "" ? null : priceIncl === "yes",
         entity_id: (selectedEntity && selectedEntity !== "all") ? selectedEntity : "",
       };
       const r = await axios.post(`${API}/purchase-orders/blanket`, body);
@@ -232,8 +242,29 @@ export default function BlanketPOCreateModal({ open, selectedEntity, onClose, on
 
           <Field label="Catatan">
             <textarea data-testid="blanket-notes" value={notes} onChange={(e) => setNotes(e.target.value)}
-              className="field" rows="2" placeholder="Catatan kontrak (termin, syarat, dll)…" />
+              className="field" rows="2" placeholder="Catatan kontrak (syarat lain, dll)…" />
           </Field>
+
+          {/* PB-01 — syarat komersial: turun otomatis ke tiap call-off (PO anak) */}
+          <div className="rounded-md border border-[#DCE7F7] bg-[#F7FAFF] p-2.5" data-testid="blanket-terms-block">
+            <p className="mb-2 text-[10.5px] font-bold uppercase tracking-wide text-[#0058CC]">Termin & PPN kontrak (PB-01) — turun otomatis ke tiap call-off</p>
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Termin pembayaran">
+                <KNSelect value={paymentTermCode} onValueChange={setPaymentTermCode} className="field"
+                  placeholder="— ikut termin supplier —" data-testid="blanket-payment-term"
+                  options={[{ value: "", label: `— ikut supplier${selectedSupplier?.payment_term_code ? ` (${selectedSupplier.payment_term_code})` : ""} —` },
+                    ...paymentTerms.map((t) => ({ value: t.code, label: `${t.code} · ${t.name}${t.net_days ? ` · ${t.net_days} hari` : ""}${t.dp_percent ? ` · DP ${t.dp_percent}%` : ""}` }))]} />
+              </Field>
+              <Field label="PPN">
+                <KNSelect value={taxMode} onValueChange={setTaxMode} className="field" data-testid="blanket-tax-mode"
+                  options={[{ value: "", label: "Ikut pengaturan badan usaha" }, { value: "ppn", label: "Kena PPN (Faktur Pajak Masukan)" }, { value: "non_ppn", label: "Non-PPN (supplier non-PKP)" }]} />
+              </Field>
+              <Field label="Harga sepakat">
+                <KNSelect value={priceIncl} onValueChange={setPriceIncl} className="field" data-testid="blanket-price-incl"
+                  options={[{ value: "", label: "Ikut pengaturan" }, { value: "no", label: "Belum termasuk PPN (exclude)" }, { value: "yes", label: "Sudah termasuk PPN (include)" }]} />
+              </Field>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-[#EFF0F2] sticky bottom-0 bg-white">

@@ -115,6 +115,18 @@ export default function PODetailPanel({ po, currentUser, onClose, onApprove, onC
             <span className="font-semibold tabular-nums">{String(po.expected_delivery_date).slice(0, 10)}{late ? ` · telat ${late.days} hari` : ""}</span>
           </div>
         ); })()}
+        {/* PB-01 — termin & jatuh tempo bayar (turun dari kontrak blanket / supplier) */}
+        {(po.payment_term?.code || po.payment_due_date) && (
+          <div data-testid="po-detail-terms" className="flex items-center justify-between rounded-md border border-[#DCE7F7] bg-[#F7FAFF] px-2.5 py-1.5 text-[11px] text-[#3C3C43]">
+            <span className="text-[10px] uppercase font-semibold">Termin · Jatuh tempo bayar</span>
+            <span className="font-semibold tabular-nums">
+              {po.payment_term?.code || "—"}{po.payment_term?.net_days ? ` (${po.payment_term.net_days} hari)` : ""}
+              {po.payment_due_date ? ` · ${po.payment_due_date}` : ""}
+              {po.price_includes_ppn === true ? " · harga incl. PPN" : po.price_includes_ppn === false ? " · harga excl. PPN" : ""}
+              {po.parent_po_number ? ` · dari kontrak ${po.parent_po_number}` : ""}
+            </span>
+          </div>
+        )}
 
         {/* Items with receive progress */}
         <div className="rounded-md border border-[#EFF0F2] overflow-hidden">

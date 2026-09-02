@@ -462,11 +462,26 @@ async def _create_po_core(payload: PurchaseOrderCreate, actor: Dict[str, Any], *
         })
 
     entity_id = payload.entity_id or active_entity_id
+    # PB-01 — termin: payload → kontrak blanket (call-off) → supplier; jatuh tempo bayar = ETA + net_days.
+    from services.supplier_service import resolve_payment_term, payment_due_date, ppn_mode_of
+    _term_code = (payload.payment_term_code or "").strip().upper()
+    if not _term_code and parent:
+        _term_code = str(parent.get("payment_term_code") or "").upper()
+    if not _term_code and supplier_id:
+        _sup_pt = await db.suppliers.find_one({"id": supplier_id}, {"_id": 0, "payment_term_code": 1})
+        _term_code = str((_sup_pt or {}).get("payment_term_code") or "").upper()
+    payment_term = await resolve_payment_term(_term_code, entity_id)
+    if _term_code and not payment_term:
+        raise HTTPException(status_code=400, detail=f"Termin pembayaran '{_term_code}' tidak ada di master.")
+    price_includes_ppn = payload.price_includes_ppn
+    if price_includes_ppn is None and parent:
+        price_includes_ppn = parent.get("price_includes_ppn")
     # P0-1 — breakdown harga PO: diskon item/order + DPP + PPN (Faktur Pajak Masukan).
     # INVARIAN-SAFE: total_amount tetap GROSS (Σ subtotal), pajak/diskon di field terpisah.
     pricing = await compute_order_pricing(
         raw_items, entity_id, payload.order_discount_percent,
-        cfg_section="purchasing", tax_override=payload.tax_mode)
+        cfg_section="purchasing", tax_override=payload.tax_mode,
+        ppn_mode_override=ppn_mode_of(price_includes_ppn))
     items = pricing["items"]
     total_amount = pricing["total_amount"]
     grand_total = pricing["grand_total"]
@@ -562,6 +577,11 @@ async def _create_po_core(payload: PurchaseOrderCreate, actor: Dict[str, Any], *
         "ppn_amount": pricing["ppn_amount"],
         "grand_total": grand_total,
         "tax_mode": payload.tax_mode or "",
+        # PB-01 — termin & jatuh tempo bayar (turun dari kontrak/supplier), harga incl/excl PPN.
+        "payment_term_code": payment_term.get("code", ""),
+        "payment_term": payment_term,
+        "payment_due_date": payment_due_date(payment_term, payload.expected_delivery_date or ""),
+        "price_includes_ppn": price_includes_ppn,
         "import_flag": payload.import_flag,   # R0 — override asal barang (None=ikut supplier)
         "entity_id": entity_id,
         "expected_delivery_date": payload.expected_delivery_date,

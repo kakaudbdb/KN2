@@ -107,6 +107,19 @@ async def create_blanket(payload, actor: Dict[str, Any]) -> Dict[str, Any]:
     if cap <= 0:
         cap = round(sum(i["contract_qty"] * i["contract_price"] for i in items), 2)
 
+    # PB-01 — syarat komersial kontrak: termin (kode payload → supplier), PPN, harga incl/excl.
+    from services.supplier_service import resolve_payment_term
+    term_code = (payload.payment_term_code or "").strip().upper()
+    if not term_code and sid:
+        sup = await db.suppliers.find_one({"id": sid}, {"_id": 0, "payment_term_code": 1})
+        term_code = str((sup or {}).get("payment_term_code") or "").upper()
+    term = await resolve_payment_term(term_code, entity_id)
+    if term_code and not term:
+        raise HTTPException(status_code=400, detail=f"Termin pembayaran '{term_code}' tidak ada di master.")
+    tax_mode = (payload.tax_mode or "").strip().lower()
+    if tax_mode not in ("", "ppn", "non_ppn"):
+        raise HTTPException(status_code=400, detail="tax_mode harus '', 'ppn', atau 'non_ppn'.")
+
     po_number = await next_doc_number("purchase_orders", "po_number", "PO-", entity_id=entity_id)
     actor_name = payload.created_by or actor.get("name", "Admin")
     doc = {
@@ -127,6 +140,9 @@ async def create_blanket(payload, actor: Dict[str, Any]) -> Dict[str, Any]:
         "valid_from": valid_from, "valid_until": valid_until,
         "status": "active", "contract_status": "active",
         "notes": payload.notes or "", "entity_id": entity_id,
+        # PB-01 — turun otomatis ke tiap call-off.
+        "payment_term_code": term.get("code", ""), "payment_term": term,
+        "tax_mode": tax_mode, "price_includes_ppn": payload.price_includes_ppn,
         # display helpers (bukan AP — status 'active' di luar AP_LIABILITY_STATUSES)
         "total_amount": cap, "grand_total": cap,
         "timeline": [timeline_entry("created", "Kontrak Blanket PO dibuat", actor_name,
@@ -275,7 +291,10 @@ async def prepare_call_off(blanket_id: str, payload, actor: Dict[str, Any]) -> D
         created_by=payload.created_by or actor.get("name", "Admin"),
         entity_id=blanket.get("entity_id", ""),
         order_discount_percent=float(payload.order_discount_percent or 0),
-        tax_mode=payload.tax_mode or "",
+        # PB-01 — termin/PPN/harga incl-excl TURUN dari kontrak (call-off boleh override tax_mode).
+        tax_mode=payload.tax_mode or blanket.get("tax_mode", "") or "",
+        payment_term_code=blanket.get("payment_term_code", "") or "",
+        price_includes_ppn=blanket.get("price_includes_ppn"),
     )
     return {
         "blanket": blanket, "po_payload": po_payload,

@@ -239,14 +239,18 @@ async def get_effective_settings(entity_id: Optional[str] = None) -> Dict[str, A
 
 # ── Kalkulasi pajak (PPN) ────────────────────────────────────────────────────
 
-async def compute_tax(subtotal: float, entity_id: Optional[str] = None) -> Dict[str, Any]:
+async def compute_tax(subtotal: float, entity_id: Optional[str] = None,
+                      mode_override: Optional[str] = None) -> Dict[str, Any]:
     """PPN per entitas. F-10 Coretax: dpp_nilai_lain=True → DPP = 11/12 × harga jual,
     PPN = tarif × DPP (efektif tarif × 11/12 dari harga jual). Nilai rupiah identik
-    rezim 11% lama; representasi Faktur Pajak (kolom DPP, tarif 12%, kode 04) berbeda."""
+    rezim 11% lama; representasi Faktur Pajak (kolom DPP, tarif 12%, kode 04) berbeda.
+    `mode_override` ("included"/"excluded") memaksa harga termasuk/belum termasuk PPN (PB-01)."""
     s = await get_effective_settings(entity_id)
     tax = s.get("tax", {})
     rate = float(tax.get("ppn_rate", 0) or 0)
     mode = tax.get("ppn_mode", "excluded")
+    if (mode_override or "").strip().lower() in ("included", "excluded"):
+        mode = mode_override.strip().lower()
     is_pkp = tax.get("is_pkp", True)
     use_nl = bool(tax.get("dpp_nilai_lain", False))
     subtotal = round(float(subtotal or 0), 2)
@@ -381,6 +385,7 @@ async def compute_order_pricing(
     settings: Optional[Dict[str, Any]] = None,
     cfg_section: str = "sales",
     tax_override: Optional[str] = None,
+    ppn_mode_override: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Hitung breakdown harga order: gross subtotal, diskon item, diskon order,
     DPP, PPN, grand total. Menghormati toggle settings.{cfg_section}.allow_*_discount &
@@ -434,7 +439,7 @@ async def compute_order_pricing(
                "ppn_mode": "excluded", "is_pkp": False, "dpp": net_subtotal,
                "harga_jual": net_subtotal, "ppn_amount": 0.0, "grand_total": net_subtotal}
     else:
-        tax = await compute_tax(net_subtotal, entity_id)
+        tax = await compute_tax(net_subtotal, entity_id, mode_override=ppn_mode_override)
     return {
         "items": priced_items,
         "total_amount": gross_total,                          # GROSS (invarian)

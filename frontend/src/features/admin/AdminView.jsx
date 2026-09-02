@@ -10,6 +10,7 @@ import LineFilter from "../../components/LineFilter";   // FASE L — chip penya
 import ProductLifecycleCell from "../rnd/ProductLifecycleCell";
 import axios, { API } from "../../services/apiClient";
 import { formatCurrency } from "../../utils/formatters";
+import { productMatches, supplierCodesLabel } from "../../utils/productSearch";   // MD-08
 import { useEntityScope } from "../../context/EntityScopeContext";
 import { scopeSuffix } from "../../utils/entityLabel";
 // INV-ROLE-01 — wewenang layar dibaca dari IZIN pengguna, bukan nama peran.
@@ -186,11 +187,16 @@ export default function AdminView({
   // FASE L — penyaring lini pada Master Produk. WAJIB dideklarasikan SETELAH
   // `records` (dulu di atasnya → TDZ "Cannot access before initialization" yang
   // membuat seluruh halaman Produk & Harga blank di bundle produksi).
+  const [productQuery, setProductQuery] = useState("");   // MD-08 — cari kode KN / kode pabrik
   const visibleRecords = useMemo(() => {
-    if (tab !== "products" || !lineFilter) return records;
-    const want = lineFilter.split(",").map((s) => s.trim()).filter(Boolean);
-    return (records || []).filter((r) => want.includes(String(r.line_code || "")));
-  }, [records, tab, lineFilter]);
+    let rows = records;
+    if (tab === "products" && lineFilter) {
+      const want = lineFilter.split(",").map((s) => s.trim()).filter(Boolean);
+      rows = (rows || []).filter((r) => want.includes(String(r.line_code || "")));
+    }
+    if (tab === "products" && productQuery.trim()) rows = (rows || []).filter((r) => productMatches(r, productQuery));
+    return rows;
+  }, [records, tab, lineFilter, productQuery]);
 
   const handleDryRunImport = async () => {
     if (!importFile) return;
@@ -349,9 +355,14 @@ export default function AdminView({
           {!['permissions', 'audit', 'integrations'].includes(tab) && <>
           <div className="grid gap-2">
             {tab === "products" && (
-              <LineFilter value={lineFilter} onChange={setLineFilter} storageKey="admin-products"
-                          allowed={currentUser?.allowed_line_codes} className="mb-1"
-                          testId="admin-products-line-filter" />
+              <>
+                <input data-testid="admin-products-search" className="field mb-1" value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                  placeholder="Cari SKU / nama KN atau kode / nama versi supplier (MD-08)…" />
+                <LineFilter value={lineFilter} onChange={setLineFilter} storageKey="admin-products"
+                            allowed={currentUser?.allowed_line_codes} className="mb-1"
+                            testId="admin-products-line-filter" />
+              </>
             )}
             {visibleRecords.length === 0 && (
               <div data-testid={`admin-records-empty-${tab}`} className="px-3 py-8 text-center text-[12px] text-[#6B6B73]">Belum ada data {tab} {scopeSuffix(scopeEntities, scopeEntityId)}.</div>
@@ -365,14 +376,16 @@ export default function AdminView({
                       { label: "Harga Jual", value: Number(row.price) > 0 ? `${formatCurrency(row.price)} / ${row.base_unit || "unit"}` : "Belum diisi" },
                       { label: "HPP (Harga Pokok)", value: Number(row.harga_pokok) > 0 ? formatCurrency(row.harga_pokok) : "Belum diisi" },
                       { label: "Lini · Grade", value: `${row.line_code ? `Lini ${row.line_code}` : "Lini belum diisi"} · Grade ${row.grade || "—"}` },
-                      { label: "Spesifikasi", value: [row.fabric_type, Number(row.gramasi) > 0 ? `${row.gramasi} gsm` : null, Number(row.lebar) > 0 ? `lebar ${row.lebar}` : null].filter(Boolean).join(" · ") || "—" },
+                      { label: "Spesifikasi", value: row.stage === "yarn"
+                        ? [row.yarn_count ? `${row.yarn_count}${row.yarn_count_system ? ` ${row.yarn_count_system}` : ""}` : null, row.yarn_material, row.yarn_ply ? `${row.yarn_ply} ply` : null, row.yarn_twist ? `puntiran ${row.yarn_twist}` : null, row.yarn_dye_status].filter(Boolean).join(" · ") || "benang —"
+                        : [row.fabric_type, Number(row.gramasi) > 0 ? `${row.gramasi} gsm` : null, Number(row.lebar) > 0 ? `lebar ${row.lebar}` : null].filter(Boolean).join(" · ") || "—" },
                       { label: "Status", value: `${row.status || (row.active === false ? "inactive" : "active")} · tahap ${row.stage || "finished"}` },
                     ],
                   }
                 : { title: row.name || row.legal_name || row.code || row.email, body: `Record ${tab} — gunakan tombol di baris ini untuk mengubah atau menonaktifkan.`, facts: [{ label: "Module", value: tab }, { label: "Status", value: row.status || (row.active === false ? "inactive" : "active") }] })}>
                 <div className="min-w-0">
                   <p data-testid={`admin-record-title-${row.id}`} className="text-[12.5px] font-semibold truncate">{row.name || row.legal_name || row.code || row.email}</p>
-                  <p data-testid={`admin-record-meta-${row.id}`} className="text-[11px] text-[#3C3C43] truncate">{row.sku || row.code || row.document_type || row.role || row.short_name || row.city} • {row.status || (row.active === false ? "inactive" : "active")}</p>
+                  <p data-testid={`admin-record-meta-${row.id}`} className="text-[11px] text-[#3C3C43] truncate">{row.sku || row.code || row.document_type || row.role || row.short_name || row.city} • {row.status || (row.active === false ? "inactive" : "active")}{tab === "products" ? supplierCodesLabel(row) : ""}</p>
                   {tab === "products" && (
                     <div data-testid={`admin-product-domain-${row.id}`} className="mt-1 flex flex-wrap items-center gap-1">
                       <ProductLifecycleCell product={row}

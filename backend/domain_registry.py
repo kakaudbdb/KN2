@@ -129,6 +129,29 @@ YARN_COUNT_SYSTEMS: List[Dict[str, Any]] = [
     {"value": "Tex",    "label": "Tex (g/1000 m)"},
 ]
 
+# MD-02 — isian khas BENANG (master benang): kategori bahan, arah puntiran, status celup.
+YARN_MATERIALS: List[Dict[str, Any]] = [
+    {"value": "katun",     "label": "Katun (cotton)"},
+    {"value": "poliester", "label": "Poliester"},
+    {"value": "rayon",     "label": "Rayon / viskosa"},
+    {"value": "campuran",  "label": "Campuran (blend, mis. TC/CVC)"},
+    {"value": "sutra",     "label": "Sutra"},
+    {"value": "linen",     "label": "Linen"},
+    {"value": "nilon",     "label": "Nilon"},
+    {"value": "lainnya",   "label": "Lainnya"},
+]
+YARN_TWISTS: List[Dict[str, Any]] = [
+    {"value": "S", "label": "S (kiri)"},
+    {"value": "Z", "label": "Z (kanan)"},
+    {"value": "SZ", "label": "S/Z (gintir ganda)"},
+]
+YARN_DYE_STATUSES: List[Dict[str, Any]] = [
+    {"value": "raw",      "label": "Mentah / greige"},
+    {"value": "bleached", "label": "Putih (bleached)"},
+    {"value": "dyed",     "label": "Celup (dyed)"},
+    {"value": "melange",  "label": "Melange / mix"},
+]
+
 # Sumber sah perubahan grade (D-23). Dipakai `inventory_rolls.grade_history[].source`.
 GRADE_CHANGE_SOURCES: List[Dict[str, Any]] = [
     {"value": "qc_inspection",      "label": "Inspeksi QC (4-point)",          "requires_reason": False},
@@ -547,6 +570,13 @@ ENUMS: Dict[str, Dict[str, Any]] = {
                      "values": TARIFF_BASIS, "in_use": True},
     "yarn_count_system": {"label": "Sistem Nomor Benang", "ps": "PS-03", "decision": "D-22",
                           "values": YARN_COUNT_SYSTEMS, "in_use": True},
+    # MD-02 — master benang: isian khas benang (bukan gramasi/lebar).
+    "yarn_material": {"label": "Bahan Benang", "ps": "MD-02", "decision": "2026-09",
+                      "values": YARN_MATERIALS, "in_use": True},
+    "yarn_twist": {"label": "Arah Puntiran Benang", "ps": "MD-02", "decision": "2026-09",
+                   "values": YARN_TWISTS, "in_use": True},
+    "yarn_dye_status": {"label": "Status Celup Benang", "ps": "MD-02", "decision": "2026-09",
+                        "values": YARN_DYE_STATUSES, "in_use": True},
     "grade_change_source": {"label": "Sumber Perubahan Grade", "ps": "PS-09", "decision": "D-23",
                             "values": GRADE_CHANGE_SOURCES, "in_use": True},
     # FASE F (2026-07-29) — lifecycle & sample_type AKHIRNYA dipakai nyata:
@@ -707,7 +737,7 @@ STAGE_TRANSITIONS: List[Dict[str, Any]] = [
 #       Untuk `knit` field terukur TIDAK memblokir (peringatan saja) karena knit
 #       dikendalikan kg — lihat KNIT_RELAXED_FIELDS.
 STAGE_FIELD_RULES: Dict[str, Dict[str, List[str]]] = {
-    "yarn":      {"required": ["fabric_type", "yarn_count"], "recommended": []},
+    "yarn":      {"required": ["fabric_type", "yarn_count"], "recommended": ["yarn_material"]},
     "grey":      {"required": ["fabric_type", "gramasi", "lebar"], "recommended": []},
     "pfd":       {"required": ["fabric_type", "gramasi", "lebar"], "recommended": []},
     "pfp":       {"required": ["fabric_type", "gramasi", "lebar"], "recommended": []},
@@ -724,6 +754,7 @@ FIELD_LABELS: Dict[str, str] = {
     "gramasi": "Gramasi/GSM (gram per m²)",
     "lebar": "Lebar kain (meter)",
     "yarn_count": "Nomor benang (yarn count)",
+    "yarn_material": "Bahan benang (katun/poliester/rayon/campuran)",
     "grade": "Grade mutu",
     "stage": "Tahap bahan (stage)",
 }
@@ -734,6 +765,7 @@ NUMERIC_DOMAIN_FIELDS = {"gramasi", "lebar"}
 PRODUCT_DOMAIN_FIELDS = [
     "stage", "fabric_type", "grade", "gramasi", "lebar",
     "yarn_count", "yarn_count_system",
+    "yarn_material", "yarn_ply", "yarn_twist", "yarn_dye_status",   # MD-02
 ]
 
 
@@ -1035,6 +1067,12 @@ def validate_product(doc: Dict[str, Any], existing: Optional[Dict[str, Any]] = N
         errors.append(
             f"Sistem nomor benang '{raw_ycs}' tidak dikenal. "
             f"Pilihan sah: {', '.join(values_of('yarn_count_system'))}.")
+    # MD-02 — enum khas benang divalidasi hanya bila diisi.
+    for yf in ("yarn_material", "yarn_twist", "yarn_dye_status"):
+        raw_y = merged.get(yf, "")
+        if str(raw_y or "").strip() and not is_valid(yf, raw_y):
+            errors.append(f"{ENUMS[yf]['label']} '{raw_y}' tidak dikenal. "
+                          f"Pilihan sah: {', '.join(values_of(yf))}.")
 
     rules = field_rules(stage, fabric)
     stage_label = label_of("stage", stage)
@@ -1097,6 +1135,15 @@ def apply_normalization(doc: Dict[str, Any]) -> Dict[str, Any]:
             if item["value"].lower() == raw.lower():
                 doc["yarn_count_system"] = item["value"]
                 break
+    # MD-02 — normalisasi huruf besar/kecil enum benang.
+    for yf, rows in (("yarn_material", YARN_MATERIALS), ("yarn_twist", YARN_TWISTS),
+                     ("yarn_dye_status", YARN_DYE_STATUSES)):
+        if yf in doc and str(doc.get(yf) or "").strip():
+            raw = str(doc[yf]).strip()
+            for item in rows:
+                if item["value"].lower() == raw.lower():
+                    doc[yf] = item["value"]
+                    break
     return doc
 
 

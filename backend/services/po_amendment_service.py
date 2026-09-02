@@ -25,6 +25,7 @@ from db import db
 from core_utils import now_iso, safe_doc, DEFAULT_ENTITY_ID, timeline_entry
 from services import doc_refs_service as _refs   # INV-REF-04 — sapu tautan sebelum hapus
 from services.config_service import build_approval_chain, compute_order_pricing, get_effective_settings
+from services.supplier_service import ppn_mode_of   # PB-01 — harga termasuk/belum termasuk PPN
 
 AMENDABLE_STATUSES = {"waiting_approval", "pending", "receiving", "partial"}
 
@@ -220,7 +221,8 @@ async def amend_po(po_id: str, payload, actor: Dict[str, Any]) -> Dict[str, Any]
     order_disc = payload.order_discount_percent if payload.order_discount_percent is not None \
         else po.get("order_discount_percent", 0)
     tax_mode = payload.tax_mode if payload.tax_mode is not None else po.get("tax_mode", "")
-    pricing = await compute_order_pricing(raw_items, entity_id, order_disc, cfg_section="purchasing", tax_override=tax_mode)
+    pricing = await compute_order_pricing(raw_items, entity_id, order_disc, cfg_section="purchasing", tax_override=tax_mode,
+                                          ppn_mode_override=ppn_mode_of(po.get("price_includes_ppn")))
     items = pricing["items"]
     total_amount = pricing["total_amount"]
     grand_total = pricing["grand_total"]

@@ -67,6 +67,21 @@ async def list_colors(q: str = "", family: str = "", system: str = "",
         s = q.lower()
         rows = [r for r in rows
                 if s in f"{r.get('code','')}{r.get('name','')}{r.get('factory_name','')}{r.get('family','')}".lower()]
+    # MD-06 lanjutan — putaran labdip yang LEWAT tanggal butuh per warna (lencana merah di kartu).
+    today = now_iso()[:10]
+    overdue: Dict[str, int] = {}
+    async for smp in db.md_samples.find(
+            {"color_target.color_id": {"$in": [r["id"] for r in rows]},
+             "status": {"$nin": ["decided", "cancelled"]},
+             "rounds": {"$elemMatch": {"result": {"$in": ["", None]}, "due_date": {"$gt": "", "$lt": today}}}},
+            {"_id": 0, "color_target.color_id": 1, "rounds.result": 1, "rounds.due_date": 1}):
+        cid = (smp.get("color_target") or {}).get("color_id", "")
+        n = sum(1 for rd in smp.get("rounds") or []
+                if not rd.get("result") and rd.get("due_date") and rd["due_date"] < today)
+        if n:
+            overdue[cid] = overdue.get(cid, 0) + n
+    for r in rows:
+        r["labdip_overdue_count"] = overdue.get(r["id"], 0)
     return [safe_doc(r) for r in rows]
 
 

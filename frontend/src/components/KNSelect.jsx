@@ -110,6 +110,7 @@ function KNCombobox({ value, onValueChange, options, className, placeholder, dis
                 <CommandItem
                   key={String(opt.value)}
                   value={`${opt.label} ${String(opt.value)}`}
+                  keywords={Array.isArray(opt.keywords) ? opt.keywords.filter(Boolean) : undefined}
                   onSelect={() => handleSelect(opt.value)}
                   data-testid={testId ? `${testId}-option-${String(opt.value) || "empty"}` : undefined}
                 >

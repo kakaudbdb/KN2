@@ -30,6 +30,42 @@ RECEIVED_PO_STATUS = {"receiving", "partial", "completed", "closed_short"}
 COUNTED_RETURN_STATUS_EXCLUDE = {"cancelled", "rejected", "draft"}
 
 
+# ─── PB-01 — termin & PPN kontrak → turun ke PO ─────────────────────────────
+def ppn_mode_of(price_includes_ppn: Any) -> Optional[str]:
+    """True → 'included' (harga sudah termasuk PPN), False → 'excluded', None → ikut config."""
+    if price_includes_ppn is None:
+        return None
+    return "included" if bool(price_includes_ppn) else "excluded"
+
+
+async def resolve_payment_term(code: str, entity_id: str = "") -> Dict[str, Any]:
+    """Snapshot termin dari master `payment_terms` (lapisan efektif badan usaha)."""
+    code = (code or "").strip().upper()
+    if not code:
+        return {}
+    from services import entity_master_service as ems
+    rows = await ems.effective_rows("payment-terms", entity_id or "")
+    row = next((r for r in rows if str(r.get("code") or "").upper() == code), None)
+    if not row:
+        row = await db.payment_terms.find_one({"code": code}, {"_id": 0})
+    if not row:
+        return {}
+    return {"code": row.get("code", code), "name": row.get("name", ""), "type": row.get("type", "credit"),
+            "net_days": int(row.get("net_days") or 0), "dp_percent": float(row.get("dp_percent") or 0),
+            "installment_count": int(row.get("installment_count") or 0)}
+
+
+def payment_due_date(term: Dict[str, Any], anchor_date: str = "") -> str:
+    """Jatuh tempo bayar (YYYY-MM-DD) = tanggal acuan (ETA kirim / hari ini) + net_days."""
+    from datetime import timedelta
+    if not term:
+        return ""
+    base = _parse_dt(anchor_date) if anchor_date else None
+    base = (base or datetime.now(timezone.utc)).date()
+    return (base + timedelta(days=int(term.get("net_days") or 0))).isoformat()
+
+
+
 def _parse_dt(value: Any) -> Optional[datetime]:
     """Parse ISO string → datetime tz-aware (UTC). None bila gagal/kosong."""
     if not value:

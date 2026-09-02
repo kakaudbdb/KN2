@@ -5,7 +5,7 @@
  * Akses: admin/manager kelola penuh; sales boleh tambah (quick-create).
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Palette, Search, Plus, RefreshCw, Pencil, Ban, X, Save, Layers, History } from "lucide-react";
+import { Palette, Search, Plus, RefreshCw, Pencil, Ban, X, Save, Layers, History, AlertTriangle } from "lucide-react";
 import axios, { API } from "../../services/apiClient";
 import KNSelect from "../../components/KNSelect";
 import ErrorNotice from "../../components/ErrorNotice";
@@ -120,6 +120,14 @@ export default function ColorLibraryView({ currentUser }) {
               {filtered.map((c) => (
                 <div key={c.id} data-testid={`color-card-${c.id}`} className={`group relative overflow-hidden rounded-lg border ${c.status === "inactive" ? "border-dashed border-[#E5E5EA] opacity-60" : "border-[#E5E5EA]"} bg-white`}>
                   <div className="h-14 w-full" style={{ backgroundColor: c.hex }} />
+                  {Number(c.labdip_overdue_count) > 0 && (
+                    <button type="button" data-testid={`color-labdip-overdue-${c.id}`}
+                      title={`${c.labdip_overdue_count} putaran labdip lewat tanggal butuh — klik untuk riwayat`}
+                      onClick={() => setHistory({ colorId: c.id, label: `warna ${c.code} · ${c.name}` })}
+                      className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded bg-[#C62828] px-1.5 py-0.5 text-[9.5px] font-bold text-white shadow">
+                      <AlertTriangle size={10} /> Labdip telat {c.labdip_overdue_count}
+                    </button>
+                  )}
                   <div className="p-2">
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate text-[11.5px] font-bold text-[#1C1C1E]">{c.code}</span>

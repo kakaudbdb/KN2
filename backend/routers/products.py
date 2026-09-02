@@ -12,6 +12,7 @@ from services import pricelist_service
 from services import rnd_gate
 from services import product_exclusivity as pexcl
 from services import line_scope
+from services import supplier_item_service as _sis   # MD-08 — kode ganda KN ↔ supplier
 from entity_scope import entity_ctx
 
 router = APIRouter(prefix="/api")
@@ -43,6 +44,8 @@ async def list_products(request: Request, orderable_only: bool = False,
         active = None
     pmap = {p["id"]: p for p in products}
     price_map = await pricelist_service.resolve_many(active, [p["id"] for p in products], pmap)
+    # MD-08 — kode/nama versi SUPPLIER ikut dibawa agar pencarian katalog/PR/PO cocok di kedua sisi.
+    await _sis.attach_supplier_codes(products)
     for product in products:
         product.update(await product_summary(product["id"]))
         info = price_map.get(product["id"], {})

@@ -64,6 +64,23 @@ class SupplierItemError(Exception):
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. HELPER
 # ═══════════════════════════════════════════════════════════════════════════
+async def attach_supplier_codes(products: List[Dict[str, Any]]) -> None:
+    """MD-08 — tempel `supplier_codes[]` (kode/nama versi supplier) ke tiap produk (in-place)."""
+    ids = [p.get("id") for p in products if p.get("id")]
+    if not ids:
+        return
+    codes: Dict[str, List[Dict[str, str]]] = {}
+    async for si in db[COLL].find(
+            {"product_id": {"$in": ids}, "status": {"$ne": "inactive"}},
+            {"_id": 0, "product_id": 1, "supplier_sku": 1, "supplier_item_name": 1, "supplier_name": 1}):
+        codes.setdefault(si["product_id"], []).append({
+            "supplier_sku": si.get("supplier_sku", ""), "supplier_item_name": si.get("supplier_item_name", ""),
+            "supplier_name": si.get("supplier_name", "")})
+    for p in products:
+        p["supplier_codes"] = codes.get(p.get("id"), [])
+
+
+
 async def _supplier_snapshot(supplier_id: str) -> Dict[str, str]:
     sup = await db.suppliers.find_one({"id": supplier_id}, {"_id": 0, "name": 1})
     if not sup:
