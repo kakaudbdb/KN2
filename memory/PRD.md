@@ -104,3 +104,10 @@ tersisa action items minor).
 - `.restore_env.sh` dijalankan: pip/yarn install, MongoDB hidup, bootstrap fondasi (expense_categories 8 · gl_accounts 75 · uoms 8), `seed_realistic.py` OK, frontend build OK.
 - Verifikasi: login admin@/manager@/salesadmin@ (demo12345) 200, GET /api/sales-admin/desk 200, UI Meja Admin Sales tampil.
 - Pengujian terakhir sebelum jeda: iteration_278 (T4 audit training / B guard UI / C pagar gudang E4.1) — belum dijalankan ulang di sesi ini.
+
+## 2026-09-02 — Sesi #072: Restore repo skkajshs/sipro + penutup gelombang 1+2 catatan demo
+- Restore via `.restore_env.sh` (`.env` dipertahankan), semua service RUNNING, FE bundle statis di-build.
+- Titik henti iter281 DITUTUP: KNSelect Radix menghormati `opt.render` (terverifikasi UI), seed `artwork_parang.png` 480×360 (menggantikan 1×1 px, juga pada master lama), kontras `pabrik:` + 5 warna seed ber-`factory_name`.
+- Regresi MD-05 diperbaiki: `scripts/seed_rnd_kpi_demo.py` & `backend/test_core_sampling_poc.py` — proofing tanpa hasil ukur (POC S 66/66, seed KPI desainer 4 permintaan).
+- Verifikasi: testing agent iteration_282 BE 100% / FE 100%, pytest iter279–281 hijau.
+- Status catatan demo: AS-01, MD-03, MD-04, MD-05, MD-07, PB-02 = SELESAI. **Berikutnya (gelombang 3, keputusan owner sudah ada):** AS-02, AS-03, MD-06, PB-01; lalu T9–T11 & seed D1–D5.
